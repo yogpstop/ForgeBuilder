@@ -225,27 +225,26 @@ public class Patcher {
       target.put(e.getKey(), e.getValue().process(f));
   }
 
-  private static void applyDiff(final String diff, final Map<String, String> target, final File in,
-      final File out, final File rej, final File exc, final boolean debug) throws IOException {
+  private static boolean applyDiff(final String diff, final Map<String, String> target,
+      final File in, final File out, final File rej, final boolean debug) throws IOException {
     if (diff == null)
-      return;
+      return true;
     final UnifiedDiff ud = new UnifiedDiff();
     final Reader sr = new StringReader(diff);
     final BufferedReader br = new BufferedReader(sr);
     ud.add(br, 1);
     br.close();
     sr.close();
-    ud.patch(target, false, in, out, rej, exc, debug);
+    return ud.patch(target, false, in, out, rej, debug);
   }
 
-  static void applyPatch(final Map<String, String> patch, final ProjectConfig.ForgeVersion v,
+  static boolean applyPatch(final Map<String, String> patch, final ProjectConfig.ForgeVersion v,
       final boolean debug, final File base) throws IOException {
     applyFileCsv(patch.get(v.forgev + "-file.csv"), patch, v.srces);
     applyImportCsv(patch.get(v.forgev + "-import.csv"), v.srces);
     applyRegexpCsv(patch.get(v.forgev + "-regexp.csv"), v.srces);
-    applyDiff(patch.get(v.forgev + ".patch"), v.srces, new File(base, v.parent + "-" + v.forgev
-        + File.separatorChar + "java"), new File(base, v.forgev + File.separatorChar + "java"),
-        new File(base, v.forgev + File.separatorChar + "rej"), new File(base, v.forgev
-            + File.separatorChar + "exc"), debug);
+    return applyDiff(patch.get(v.forgev + ".patch"), v.srces, new File(base, v.parent + "-"
+        + v.forgev + File.separatorChar + "java"), new File(base, v.forgev + File.separatorChar
+        + "java"), new File(base, v.forgev + File.separatorChar + "rej"), debug);
   }
 }

@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -45,40 +44,34 @@ public class Downloader implements Runnable {
       }
     }
 
-    try {
-      final HttpURLConnection uc = (HttpURLConnection) url.openConnection();
-      uc.setInstanceFollowRedirects(true);
-      if (etag.exists())
-        uc.setRequestProperty("If-None-Match", Utils.fileToString(etag, Utils.UTF_8));
-      if (lm.exists())
-        uc.setRequestProperty("If-Modified-Since", Utils.fileToString(lm, Utils.UTF_8));
-      uc.connect();
-      if (uc.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED)
-        return out;
-      if (uc.getResponseCode() != HttpURLConnection.HTTP_OK)
-        return null;
-      out.getParentFile().mkdirs();
-      sum.getParentFile().mkdirs();
-      if (uc.getHeaderField("ETag") != null)
-        Utils.stringToFile(uc.getHeaderField("ETag"), etag, Utils.UTF_8);
-      if (uc.getHeaderField("Last-Modified") != null)
-        Utils.stringToFile(uc.getHeaderField("Last-Modified"), lm, Utils.UTF_8);
-      final MessageDigest md = MessageDigest.getInstance("SHA-512");
-      final InputStream is = uc.getInputStream();
-      final OutputStream os = new FileOutputStream(out);
-      while ((nread = is.read(buf)) > -1) {
-        os.write(buf, 0, nread);
-        md.update(buf, 0, nread);
-      }
-      os.close();
-      is.close();
-      uc.disconnect();
-      Utils.byteArrayToFile(md.digest(), sum);
-    } catch (final MalformedURLException e) {
+    final HttpURLConnection uc = (HttpURLConnection) url.openConnection();
+    uc.setInstanceFollowRedirects(true);
+    if (etag.exists())
+      uc.setRequestProperty("If-None-Match", Utils.fileToString(etag, Utils.UTF_8));
+    if (lm.exists())
+      uc.setRequestProperty("If-Modified-Since", Utils.fileToString(lm, Utils.UTF_8));
+    uc.connect();
+    if (uc.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED)
+      return out;
+    if (uc.getResponseCode() != HttpURLConnection.HTTP_OK)
       return null;
-    } catch (final IOException e) {
-      return null;
+    out.getParentFile().mkdirs();
+    sum.getParentFile().mkdirs();
+    if (uc.getHeaderField("ETag") != null)
+      Utils.stringToFile(uc.getHeaderField("ETag"), etag, Utils.UTF_8);
+    if (uc.getHeaderField("Last-Modified") != null)
+      Utils.stringToFile(uc.getHeaderField("Last-Modified"), lm, Utils.UTF_8);
+    final MessageDigest md = MessageDigest.getInstance("SHA-512");
+    final InputStream is = uc.getInputStream();
+    final OutputStream os = new FileOutputStream(out);
+    while ((nread = is.read(buf)) > -1) {
+      os.write(buf, 0, nread);
+      md.update(buf, 0, nread);
     }
+    os.close();
+    is.close();
+    uc.disconnect();
+    Utils.byteArrayToFile(md.digest(), sum);
     return out;
   }
 

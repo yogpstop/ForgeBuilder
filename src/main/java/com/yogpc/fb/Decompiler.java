@@ -67,7 +67,7 @@ public final class Decompiler {
           Pattern.compile(PAT_MAV + "src\\.zip"), Pattern.compile(PAT_MAV + "userdev\\.jar")};
   private static final Pattern FORGE_INDEX = Pattern.compile(PAT_LEG + "([^\"]+)");
 
-  static final void exec(final String version) throws Exception {
+  static final boolean exec(final String version) throws Exception {
     if (list == null) {
       final Queue<Downloader> l = new LinkedList<Downloader>();
       l.add(new Downloader("forge_main", new URL(Constants.FORGE_BASE + "minecraftforge/"), "html"));
@@ -93,7 +93,7 @@ public final class Decompiler {
         }
       }
     }
-    list.get(version).decompile();
+    return list.get(version).decompile();
   }
 
   private final String forgev, url, mcv;
@@ -214,16 +214,14 @@ public final class Decompiler {
     return new File[] {a[0].getFile(), a[1].getFile(), a[2].getFile()};
   }
 
-  private final void decompile() throws Exception {
+  private final boolean decompile() throws Exception {
     File dbg1 = new File(Constants.DATA_DIR, "debug");
     final File dbg2 = new File(dbg1, "to");
     final File dbg3 = new File(dbg1, "rej");
-    final File dbg4 = new File(dbg1, "exc");
     dbg1 = new File(dbg1, "from");
     dbg1.delete();
     dbg2.delete();
     dbg3.delete();
-    dbg4.delete();
     System.out.println("<<< Start decompile");
     System.out.println("> Start downloads");
     final File[] files = download();
@@ -238,20 +236,24 @@ public final class Decompiler {
     final Map<String, String> sources = ffpatcher(tmp);
     tmp.delete();
     System.out.println("> Apply ffpatch");
-    this.m.ff_patch.patch(sources, false, dbg1, dbg2, dbg3, dbg4, false);
+    if (!this.m.ff_patch.patch(sources, false, dbg1, dbg2, dbg3, false))
+      return false;
     System.out.println("> Apply astyle");
     astyle(sources);
     System.out.println("> Apply fmlpatch");
-    this.m.fml_patches.patch(sources, false, dbg1, dbg2, dbg3, dbg4, false);
+    if (!this.m.fml_patches.patch(sources, false, dbg1, dbg2, dbg3, false))
+      return false;
     if (this.forgevi >= 1048) {
       System.out.println("> Apply forgepatch");
-      this.m.forge_patches.patch(sources, false, dbg1, dbg2, dbg3, dbg4, false);
+      if (!this.m.forge_patches.patch(sources, false, dbg1, dbg2, dbg3, false))
+        return false;
     }
     System.out.println("> Rename source (Phase 1)");
     this.m.rename(sources, false, this.forgevi);
     if (this.forgevi < 1048) {
       System.out.println("> Apply forgepatch");
-      this.m.forge_patches.patch(sources, false, dbg1, dbg2, dbg3, dbg4, false);
+      if (!this.m.forge_patches.patch(sources, false, dbg1, dbg2, dbg3, false))
+        return false;
     }
     System.out.println("> Add source");
     for (final String k : this.m.sources.keySet())
@@ -308,5 +310,6 @@ public final class Decompiler {
     w.close();
     os.close();
     System.out.println("<<< Decompile is done");
+    return true;
   }
 }

@@ -90,15 +90,14 @@ public final class CompilerCaller {
     srces.put(n, Utils.fileToString(f, Utils.ISO_8859_1));
   }
 
-  private static void loadAll(final File base, final ProjectConfig pc,
+  private static boolean loadAll(final File base, final ProjectConfig pc,
       final ProjectConfig.ForgeVersion fv, final Map<String, String> patches, final boolean debug)
       throws IOException {
     if (fv.parent != null)
       for (final ProjectConfig.ForgeVersion p : pc.forge)
         if (p.forgev.equals(fv.parent)) {
           fv.srces.putAll(p.srces);
-          Patcher.applyPatch(patches, fv, debug, new File(base, "src"));
-          return;
+          return Patcher.applyPatch(patches, fv, debug, new File(base, "src"));
         }
     final List<String> from = new LinkedList<String>();
     if (pc.java == null)
@@ -115,9 +114,10 @@ public final class CompilerCaller {
     for (final String s : from)
       loadDir(new File(sbase, s.replace('/', File.separatorChar)),
           new File(sbase, s.replace('/', File.separatorChar)), fv.srces);
+    return true;
   }
 
-  private static int build(final String _base, final List<String> debugs, final String eclipse,
+  private static boolean build(final String _base, final List<String> debugs, final String eclipse,
       final List<String> skips) throws Exception {
     System.out.print("<<< Start compile ");
     System.out.println(_base);
@@ -160,8 +160,10 @@ public final class CompilerCaller {
         if (ecl)
           Eclipse.createEclipse(base, fd, pc, fv);
       }
-      loadAll(base, pc, fv, patches,
-          debugs != null && (debugs.size() == 0 || debugs.contains(fv.forgev)) || ecl);
+      System.out.println("> Load sources and resources");
+      if (!loadAll(base, pc, fv, patches,
+          debugs != null && (debugs.size() == 0 || debugs.contains(fv.forgev)) || ecl))
+        return false;
       int ret = 0;
       if (fd != null && !skip) {
         final String out = genOutPath(base, pc, fv, fd.config.mcv);
@@ -170,13 +172,13 @@ public final class CompilerCaller {
       }
       compiled.add(fv.forgev);
       if (ret != 0)
-        return ret;
+        return false;
     }
     System.out.println("<<< Compile is done");
-    return 0;
+    return true;
   }
 
-  public static void main(final String[] args) {
+  public static void main(final String[] args) throws Exception {
     final List<String> skips = new ArrayList<String>();
     final List<String> debugs = new ArrayList<String>();
     boolean skip = false, debug = false;
@@ -192,11 +194,7 @@ public final class CompilerCaller {
         debug = true;
       } else if (arg.startsWith("-e"))
         ecl = arg.substring(2);
-      else
-        try {
-          build(arg, debug ? debugs : null, ecl, skip ? skips : null);
-        } catch (final Exception e) {
-          e.printStackTrace();
-        }
+      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null))
+        System.err.println("<<< Compile is failed!");
   }
 }

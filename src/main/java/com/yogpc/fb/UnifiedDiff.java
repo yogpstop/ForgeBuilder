@@ -3,8 +3,6 @@ package com.yogpc.fb;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -129,15 +127,15 @@ public final class UnifiedDiff {
       return true;
     }
 
-    final int patch(final List<String> l, final int d, final boolean dry) {
+    final Integer patch(final List<String> l, final int d, final boolean dry) {
       for (int f = 0; f < 3; f++)
         for (int i = 0; i < l.size(); i++) {
           if (tpatch(l, this.from_pos + d - i, f, dry))
-            return this.to_len - this.from_len;
+            return new Integer(this.to_len - this.from_len);
           if (tpatch(l, this.from_pos + d + i, f, dry))
-            return this.to_len - this.from_len;
+            return new Integer(this.to_len - this.from_len);
         }
-      throw new UnsupportedOperationException();
+      return null;
     }
 
     @Override
@@ -163,43 +161,44 @@ public final class UnifiedDiff {
     private final String filename;
     final List<Hunk> hunks = new LinkedList<Hunk>();
 
-    PFile(final String l, final BufferedReader br, final int p) throws IOException {
+    private PFile(final String fn) {
+      this.filename = fn;
+    }
+
+    static PFile init(final String l, final BufferedReader br, final int p) throws IOException {
       br.readLine();// skip +++ line
       Matcher m = p1.matcher(l);
       if (!m.matches())
-        throw new UnsupportedOperationException(l);
+        return null;
       String c = m.group(1).replace('\\', '/');
       if (c.charAt(0) == '"')
         c = c.substring(1, c.length() - 1);
       if (p < 0) {
         m = p2.matcher(c);
         if (!m.matches())
-          throw new UnsupportedOperationException(c);
-        this.filename = m.group(1);
-      } else {
-        int s = 0;
-        for (int i = 0; i < p; i++)
-          s = c.indexOf('/', s);
-        this.filename = c.substring(s + 1);
-
+          return null;
+        return new PFile(m.group(1));
       }
+      int s = 0;
+      for (int i = 0; i < p; i++)
+        s = c.indexOf('/', s);
+      return new PFile(c.substring(s + 1));
     }
 
     final boolean patch(final Map<String, String> target, final boolean dry,
-        final Map<String, String> excm, final Map<String, String> rejs) {
+        final Map<String, String> rejs) {
       final String bak = target.get(this.filename);
       final List<Hunk> failed = new ArrayList<Hunk>();
-      final List<Exception> excs = new ArrayList<Exception>();
       if (bak != null) {
         final List<String> l = new ArrayList<String>(Arrays.asList(bak.split("(\r\n|\r|\n)")));
         int i = 0;
-        for (final Hunk h : this.hunks)
-          try {
-            i += h.patch(l, i, dry);
-          } catch (final Exception e) {
+        for (final Hunk h : this.hunks) {
+          final Integer oi = h.patch(l, i, dry);
+          if (oi != null)
+            i += oi.intValue();
+          else
             failed.add(h);
-            excs.add(e);
-          }
+        }
 
         final StringBuilder o = new StringBuilder();
         for (final String e : l)
@@ -208,22 +207,12 @@ public final class UnifiedDiff {
       } else
         failed.addAll(this.hunks);
       if (failed.size() > 0) {
-        {
-          final StringBuilder sb = new StringBuilder();
-          sb.append("--- a/").append(this.filename).append('\n');
-          sb.append("+++ b/").append(this.filename).append('\n');
-          for (final Hunk h : failed)
-            sb.append(h.toString());
-          rejs.put(this.filename, sb.toString());
-        }
-        {
-          final StringWriter sw = new StringWriter();
-          final PrintWriter pw = new PrintWriter(sw);
-          for (final Exception e : excs)
-            e.printStackTrace(pw);
-          pw.close();
-          excm.put(this.filename, sw.toString());
-        }
+        final StringBuilder sb = new StringBuilder();
+        sb.append("--- a/").append(this.filename).append('\n');
+        sb.append("+++ b/").append(this.filename).append('\n');
+        for (final Hunk h : failed)
+          sb.append(h.toString());
+        rejs.put(this.filename, sb.toString());
         return false;
       }
       return true;
@@ -247,7 +236,7 @@ public final class UnifiedDiff {
       if (l.startsWith("---")) {
         if (f != null)
           this.files.add(f);
-        f = new PFile(l, br, p);
+        f = PFile.init(l, br, p);
       } else if (l.startsWith("@@"))
         if (f != null)
           f.hunks.add(new Hunk(l, br));
@@ -264,23 +253,22 @@ public final class UnifiedDiff {
     }
   }
 
-  final void patch(final Map<String, String> target, final boolean dry, final File in,
-      final File out, final File rej, final File exc, final boolean force) throws IOException {
+  final boolean patch(final Map<String, String> target, final boolean dry, final File in,
+      final File out, final File rej, final boolean force) throws IOException {
     final Map<String, String> bak = new HashMap<String, String>(target);
     final Map<String, String> rejs = new HashMap<String, String>();
-    final Map<String, String> excs = new HashMap<String, String>();
     boolean failed = false;
     for (final PFile f : this.files)
-      failed |= !f.patch(target, dry, excs, rejs);
+      failed |= !f.patch(target, dry, rejs);
     if (failed || force)
       writeDebug(bak, in);
     if (failed || force)
       writeDebug(target, out);
     if (failed) {
       writeDebug(rejs, rej);
-      writeDebug(excs, exc);
-      throw new UnsupportedOperationException();
+      return false;
     }
+    return true;
   }
 
   @Override

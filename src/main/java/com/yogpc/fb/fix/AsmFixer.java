@@ -92,7 +92,7 @@ public class AsmFixer extends ClassLoader {
       rca = get("org/objectweb/asm/commons/RemappingClassAdapter.class");
       rma = get("org/objectweb/asm/commons/RemappingMethodAdapter.class");
     } catch (final IOException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
     fixConstructor(rma);
     write(rma);

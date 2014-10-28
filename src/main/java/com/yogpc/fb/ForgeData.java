@@ -27,26 +27,27 @@ public class ForgeData {
   final JarMapping srg = new JarMapping();
   final File jar;
 
-  private ForgeData(final String version) throws IOException {
-    this.jar = new File(Constants.DATA_DIR, version + "-dev.jar");
-    final Gson gson = new Gson();
-    final InputStream is = new FileInputStream(new File(Constants.DATA_DIR, version + ".cfg"));
+
+  private ForgeData(final File c, final File s, final File j) throws IOException {
+    final InputStream is = new FileInputStream(c);
     final Reader r = new InputStreamReader(is, "UTF-8");
-    this.config = gson.fromJson(r, ForgeConfig.class);
+    this.config = new Gson().fromJson(r, ForgeConfig.class);
     r.close();
-    MappingBuilder.loadNew(new File(Constants.DATA_DIR, version + ".srg"), this.srg);
+    this.jar = j;
+    MappingBuilder.loadNew(s, this.srg);
   }
 
   static ForgeData get(final String version) throws Exception {
     if (versions.containsKey(version))
       return versions.get(version);
-    try {
-      versions.put(version, new ForgeData(version));
-      return versions.get(version);
-    } catch (final IOException e) {
-      Decompiler.exec(version);
-      return get(version);
-    }
+    final File jar = new File(Constants.DATA_DIR, version + "-dev.jar");
+    final File config = new File(Constants.DATA_DIR, version + ".cfg");
+    final File srg = new File(Constants.DATA_DIR, version + ".srg");
+    if (jar.isFile() && config.isFile() && srg.isFile())
+      versions.put(version, new ForgeData(config, srg, jar));
+    else if (!Decompiler.exec(version))
+      return null;
+    return get(version);
   }
 
   // For debug
