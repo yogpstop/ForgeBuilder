@@ -20,6 +20,7 @@ import com.yogpc.fb.ProjectConfig.ForgeVersion;
 import com.yogpc.fb.asm.MainTransformer;
 import com.yogpc.fb.dep.MainAnalyzer;
 import com.yogpc.fb.map.JarMapping;
+import com.yogpc.fb.sa.MavenWrapper;
 import com.yogpc.fb.sa.Utils;
 
 public final class Compiler {
@@ -54,7 +55,7 @@ public final class Compiler {
   }
 
   static int exec_javac(final Map<String, String> src, final Map<Pattern, String> map,
-      final List<File>[] cp, final ForgeData c, final File src_jar, final File bin_jar,
+      final List<File> cp, final ForgeData c, final File src_jar, final File bin_jar,
       final Map<String, String> man) throws IOException, InterruptedException {
     final File src_dir = File.createTempFile("ForgeBuilder", ".dir");
     final File bin_dir = File.createTempFile("ForgeBuilder", ".dir");
@@ -70,11 +71,10 @@ public final class Compiler {
     osw.write("\n-d ");
     osw.write(bin_dir.getPath());
     osw.write("\n-classpath ");
-    for (final List<File> fl : cp)
-      for (final File f : fl) {
-        osw.write(f.getPath());
-        osw.write(File.pathSeparator);
-      }
+    for (final File f : cp) {
+      osw.write(f.getPath());
+      osw.write(File.pathSeparator);
+    }
     if (c != null)
       osw.write(c.jar.getPath());
     osw.write('\n');
@@ -112,22 +112,22 @@ public final class Compiler {
   }
 
   static int compile(final ForgeVersion fv, final String out,
-      final LinkedHashMap<Pattern, String> map, final ForgeData fd, final List<File>[] cp)
-      throws Exception {
-    System.out.println("<<< Start compile");
+      final LinkedHashMap<Pattern, String> map, final ForgeData fd, final MavenWrapper w1,
+      final MavenWrapper w2) throws Exception {
     final File src = new File(out + "-sources.jar");
     src.getParentFile().mkdirs();
     System.out.println("> Compile mod");
-    final int i = exec_javac(fv.srces, map, cp, fd, src, new File(out + "-dev.jar"), fv.manifest);
+    final int i =
+        exec_javac(fv.srces, map, MavenWrapper.getJar(w1, w2), fd, src, new File(out + "-dev.jar"),
+            fv.manifest);
     if (i != 0)
       return i;
     List<String> depCls = null;
     if (fv.contains != null) {
       System.out.println("> Resolve Class Dependencies");
       final MainAnalyzer ma = new MainAnalyzer();
-      for (final List<File> l : cp)
-        for (final File f : l)
-          ma.addCP(f);
+      for (final File f : MavenWrapper.getJar(w1, w2))
+        ma.addCP(f);
       ma.addCP(fd.jar);
       depCls = ma.process(new File(out + "-dev.jar"));
     }
@@ -135,11 +135,10 @@ public final class Compiler {
     final int forgevi = Integer.parseInt(fv.forgev);
     final MainTransformer trans = new MainTransformer(forgevi, fd.config.identifier, fd.srg);
     trans.addCP(fd.jar);
-    for (final File f : cp[1])
+    for (final File f : MavenWrapper.getJar(w1))
       trans.addCP(f);
     trans.process_jar(new File(out + "-dev.jar"), new File(out + ".jar"), depCls, fv.contains,
         forgevi <= 534 ? JarMapping.RAW_OBF : JarMapping.RAW_SRG);
-    System.out.println("<<< Compile is done");
     return 0;
   }
 }

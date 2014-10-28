@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.yogpc.fb.sa.Constants;
-import com.yogpc.fb.sa.Downloader;
+import com.yogpc.fb.sa.MavenWrapper;
 import com.yogpc.fb.sa.Utils;
 
 public final class CompilerCaller {
@@ -119,6 +119,8 @@ public final class CompilerCaller {
 
   private static int build(final String _base, final List<String> debugs, final String eclipse,
       final List<String> skips) throws Exception {
+    System.out.print("<<< Start compile ");
+    System.out.println(_base);
     final LinkedList<String> compiled = new LinkedList<String>();
     final File base = new File(_base).getCanonicalFile();
     ProjectConfig pc;
@@ -138,32 +140,39 @@ public final class CompilerCaller {
         new LinkedList<ProjectConfig.ForgeVersion>(pc.forge);
     ProjectConfig.ForgeVersion fv;
     ForgeData fd = null;
-    List<File>[] cp = null;
     while ((fv = q.poll()) != null) {
       if (fv.parent != null && !compiled.contains(fv.parent)) {
         q.add(fv);
         continue;
       }
+      System.out.print("<< Start forge ");
+      System.out.println(fv.forgev);
       final boolean ecl = fv.forgev.equals(eclipse);
       final boolean skip = skips != null && (skips.size() == 0 || skips.contains(fv.forgev));
+      final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
       if (ecl || !skip) {
         fd = ForgeData.get(fv.forgev);
-        cp = Downloader.resolveDepends(fd.config.depends, fv.depends);
+        w1.addDownload(fv.depends);
+        w2.addDownload(fd.config.depends);
+        System.out.println("> Downloading dependencies");
+        MavenWrapper.getJar(w1, w2);// Wait for download
+        MavenWrapper.getSources(w1, w2);
         if (ecl)
           Eclipse.createEclipse(base, fd, pc, fv);
       }
       loadAll(base, pc, fv, patches,
           debugs != null && (debugs.size() == 0 || debugs.contains(fv.forgev)) || ecl);
       int ret = 0;
-      if (fd != null && cp != null && !skip) {
+      if (fd != null && !skip) {
         final String out = genOutPath(base, pc, fv, fd.config.mcv);
         final LinkedHashMap<Pattern, String> rep = processReplaces(pc, fv, fd.config.mcv);
-        ret = Compiler.compile(fv, out, rep, fd, cp);
+        ret = Compiler.compile(fv, out, rep, fd, w1, w2);
       }
       compiled.add(fv.forgev);
       if (ret != 0)
         return ret;
     }
+    System.out.println("<<< Compile is done");
     return 0;
   }
 

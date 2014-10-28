@@ -18,7 +18,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.yogpc.fb.sa.Constants;
-import com.yogpc.fb.sa.Downloader;
+import com.yogpc.fb.sa.MavenWrapper;
 
 public class Eclipse {
   private static String getPath(final String group, final String artifact, final String version,
@@ -57,7 +57,7 @@ public class Eclipse {
   }
 
   private static Element getLibrary(final Document d, final String l) {
-    final Matcher m = Downloader.lib_nam.matcher(l);
+    final Matcher m = MavenWrapper.lib_nam.matcher(l);
     String lib = null, source = null;
     if (!l.startsWith("http://") && !l.startsWith("https://") && m.matches()) {
       lib = getPath(m.group(1), m.group(2), m.group(3), m.group(4));

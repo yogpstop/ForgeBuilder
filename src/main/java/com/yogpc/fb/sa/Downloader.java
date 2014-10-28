@@ -11,11 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Downloader implements Runnable {
   private static File tryDownload(final URL url, final String base, final File tout,
@@ -173,47 +169,5 @@ public class Downloader implements Runnable {
     } catch (final Exception e) {
       this.ret = null;
     }
-  }
-
-  public static final Pattern lib_nam = Pattern.compile("([^:]+):([^:]+):([^:]+)(?::([^:]+))?");
-
-  public static List<File>[] resolveDepends(final List<?>... l) throws InterruptedException,
-      MalformedURLException {
-    @SuppressWarnings("unchecked")
-    final List<Downloader>[] p = new List[l.length];
-    final List<Downloader> f = new ArrayList<Downloader>();
-    for (int i = 0; i < l.length; i++) {
-      p[i] = new ArrayList<Downloader>();
-      if (l[i] != null)
-        for (final Object s : l[i]) {
-          final String ss = (String) s;
-          final Matcher m = lib_nam.matcher(ss);
-          if (!ss.startsWith("http://") && !ss.startsWith("https://") && m.matches()) {
-            final String g = m.group(1), a = m.group(2), v = m.group(3);
-            p[i].add(new Downloader(g, a, v, m.group(4)));
-            f.add(new Downloader(g, a, v, "sources"));
-            f.add(new Downloader(g, a, v, "javadoc"));
-            f.add(new Downloader(g, a, v, "natives-" + Constants.OS));
-          } else {
-            final String n =
-                ss.replace(":", "%3A").replace("//", "/").replace('/', File.separatorChar);
-            p[i].add(new Downloader(n, new URL(ss), "jar"));
-          }
-        }
-    }
-    for (final Downloader d : f)
-      d.join();
-    @SuppressWarnings("unchecked")
-    final List<File>[] ret = new List[l.length];
-    for (int i = 0; i < l.length; i++) {
-      ret[i] = new ArrayList<File>();
-      if (p[i] != null)
-        for (final Downloader d : p[i]) {
-          d.join();
-          if (d.ret != null)
-            ret[i].add(d.ret);
-        }
-    }
-    return ret;
   }
 }

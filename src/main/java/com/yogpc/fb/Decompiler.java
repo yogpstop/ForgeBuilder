@@ -35,6 +35,7 @@ import com.yogpc.fb.fg.McpCleanup;
 import com.yogpc.fb.map.MappingBuilder;
 import com.yogpc.fb.sa.Constants;
 import com.yogpc.fb.sa.Downloader;
+import com.yogpc.fb.sa.MavenWrapper;
 import com.yogpc.fb.sa.Utils;
 
 public final class Decompiler {
@@ -282,7 +283,7 @@ public final class Decompiler {
     }
     System.out.println("> Compile minecraft");
     final int ret =
-        Compiler.exec_javac(sources, null, Downloader.resolveDepends(this.m.json.getNames()), null,
+        Compiler.exec_javac(sources, null, MavenWrapper.getLegacy(this.m.json.getNames()), null,
             new File(Constants.DATA_DIR, this.forgev + "-sources.jar"), new File(
                 Constants.DATA_DIR, this.forgev + "-dev.jar"), null);
     if (ret != 0)
