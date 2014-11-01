@@ -17,6 +17,8 @@ public class MavenWrapper {
   public static final Pattern lib_nam = Pattern.compile("([^:]+):([^:]+):([^:]+)(?::([^:]+))?");
 
   public void addDownload(final List<String> l) throws MalformedURLException {
+    if (l == null)
+      return;
     for (final String s : l) {
       final Matcher m = lib_nam.matcher(s);
       if (!s.startsWith("http://") && !s.startsWith("https://") && m.matches()) {
