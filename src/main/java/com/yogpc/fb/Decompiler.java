@@ -74,10 +74,10 @@ public final class Decompiler {
       list = new HashMap<String, Decompiler>();
       Downloader d;
       while ((d = l.poll()) != null) {
-        d.join();
-        if (d.getFile() == null)
+        final File f = d.process(null);
+        if (f == null)
           continue;
-        final String data = Utils.fileToString(d.getFile(), Utils.UTF_8);
+        final String data = Utils.fileToString(f, Utils.UTF_8);
         final Matcher y = FORGE_INDEX.matcher(data);
         while (y.find()) {
           if (!y.group().endsWith(".html")
@@ -208,10 +208,7 @@ public final class Decompiler {
                 new File(MINECRAFT_VERSIONS, this.mcv + File.separatorChar + this.mcv + ".jar")),
             new Downloader(this.mcv + "server", new URL(MC_BASE + this.mcv + "/minecraft_server."
                 + this.mcv + ".jar"), "jar")};
-    a[0].join();
-    a[1].join();
-    a[2].join();
-    return new File[] {a[0].getFile(), a[1].getFile(), a[2].getFile()};
+    return new File[] {a[0].process(null), a[1].process(null), a[2].process(null)};
   }
 
   private final boolean decompile() throws Exception {

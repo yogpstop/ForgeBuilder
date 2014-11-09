@@ -12,7 +12,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-public class Downloader implements Runnable {
+public class Downloader implements Runnable, IProcessor {
   private static File tryDownload(final URL url, final String base, final File tout,
       final String ext) throws NoSuchAlgorithmException, IOException {
     final byte[] buf = new byte[8192];
@@ -114,10 +114,6 @@ public class Downloader implements Runnable {
   private final Thread t;
   private File ret;
 
-  public File getFile() {
-    return this.ret;
-  }
-
   Downloader(final String g, final String a, final String v, final String s) {
     this.name = null;
     this.maven = new String[] {g, a, v, s};
@@ -148,10 +144,6 @@ public class Downloader implements Runnable {
     this.t.start();
   }
 
-  public void join() throws InterruptedException {
-    this.t.join();
-  }
-
   @Override
   public void run() {
     try {
@@ -162,5 +154,18 @@ public class Downloader implements Runnable {
     } catch (final Exception e) {
       this.ret = null;
     }
+  }
+
+  private IProcessor child;
+
+  @Override
+  public File process(final File in) throws InterruptedException {
+    this.t.join();
+    return this.child != null ? this.child.process(this.ret) : this.ret;
+  }
+
+  @Override
+  public void setChild(final IProcessor ip) {
+    this.child = ip;
   }
 }

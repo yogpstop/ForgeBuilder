@@ -37,9 +37,9 @@ public class MavenWrapper {
   private static void getResult(final List<Downloader> l, final List<File> r)
       throws InterruptedException {
     for (final Downloader d : l) {
-      d.join();
-      if (d.getFile() != null)
-        r.add(d.getFile());
+      final File f = d.process(null);
+      if (f != null)
+        r.add(f);
     }
   }
 
