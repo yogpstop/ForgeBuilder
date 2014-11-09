@@ -76,7 +76,7 @@ public class Eclipse {
   private static void addSources(final Document doc, final Element root, final ProjectConfig pc,
       final ProjectConfig.ForgeVersion fv) {
     if (fv.src_base == null)
-      fv.src_base = "src/" + (fv.parent == null ? "main" : fv.forgev);
+      fv.src_base = "src/" + (fv.parent == null ? "main" : fv.name);
     final List<String> from = new LinkedList<String>();
     if (fv.parent == null) {
       if (pc.java == null)

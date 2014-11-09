@@ -207,9 +207,15 @@ public class Patcher {
         a.clear();
         l = CSVParser.I.parseLine(rl);
         for (int i = 1; i < l.length; i++)
-          if (l[i].contains("/"))
-            t.put(w.get(l[i].replaceAll("\\s", "") + ".java"), Utils.DUMMY_OBJECT);
-          else if (l[i].contains("."))
+          if (l[i].contains("/")) {
+            final String java = l[i].replaceAll("\\s", "") + ".java";
+            final ImportDiff id = w.get(java);
+            if (id == null) {
+              System.err.println("Can't patch import csv to " + java);
+              continue;
+            }
+            t.put(id, Utils.DUMMY_OBJECT);
+          } else if (l[i].contains("."))
             a.put(l[i].replaceAll("\\s", ""), Utils.DUMMY_OBJECT);
         if (t.size() == 0)
           f.putAll(a);
@@ -240,11 +246,11 @@ public class Patcher {
 
   static boolean applyPatch(final Map<String, String> patch, final ProjectConfig.ForgeVersion v,
       final boolean debug, final File base) throws IOException {
-    applyFileCsv(patch.get(v.forgev + "-file.csv"), patch, v.srces);
-    applyImportCsv(patch.get(v.forgev + "-import.csv"), v.srces);
-    applyRegexpCsv(patch.get(v.forgev + "-regexp.csv"), v.srces);
-    return applyDiff(patch.get(v.forgev + ".patch"), v.srces, new File(base, v.parent + "-"
-        + v.forgev + File.separatorChar + "java"), new File(base, v.forgev + File.separatorChar
-        + "java"), new File(base, v.forgev + File.separatorChar + "rej"), debug);
+    applyFileCsv(patch.get(v.name + "-file.csv"), patch, v.srces);
+    applyImportCsv(patch.get(v.name + "-import.csv"), v.srces);
+    applyRegexpCsv(patch.get(v.name + "-regexp.csv"), v.srces);
+    return applyDiff(patch.get(v.name + ".patch"), v.srces, new File(base, v.parent + "-" + v.name
+        + File.separatorChar + "java"), new File(base, v.name + File.separatorChar + "java"),
+        new File(base, v.name + File.separatorChar + "rej"), debug);
   }
 }

@@ -8,6 +8,7 @@ import com.google.gson.annotations.Expose;
 
 public class ProjectConfig {
   public static class ForgeVersion {
+    public String name;
     public String forgev;
     public String parent;
     public String src_base;

@@ -95,7 +95,7 @@ public final class CompilerCaller {
       throws IOException {
     if (fv.parent != null)
       for (final ProjectConfig.ForgeVersion p : pc.forge)
-        if (p.forgev.equals(fv.parent)) {
+        if (p.name.equals(fv.parent)) {
           fv.srces.putAll(p.srces);
           return Patcher.applyPatch(patches, fv, debug, new File(base, "src"));
         }
@@ -109,7 +109,7 @@ public final class CompilerCaller {
     else
       from.addAll(pc.resources);
     if (fv.src_base == null)
-      fv.src_base = "src/" + (fv.parent == null ? "main" : fv.forgev);
+      fv.src_base = "src/" + (fv.parent == null ? "main" : fv.name);
     final File sbase = new File(base, fv.src_base.replace('/', File.separatorChar));
     for (final String s : from)
       loadDir(new File(sbase, s.replace('/', File.separatorChar)),
@@ -146,9 +146,9 @@ public final class CompilerCaller {
         continue;
       }
       System.out.print("<< Start forge ");
-      System.out.println(fv.forgev);
-      final boolean ecl = fv.forgev.equals(eclipse);
-      final boolean skip = skips != null && (skips.size() == 0 || skips.contains(fv.forgev));
+      System.out.println(fv.name);
+      final boolean ecl = fv.name.equals(eclipse);
+      final boolean skip = skips != null && (skips.size() == 0 || skips.contains(fv.name));
       final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
       if (ecl || !skip) {
         fd = ForgeData.get(fv.forgev);
@@ -162,15 +162,15 @@ public final class CompilerCaller {
       }
       System.out.println("> Load sources and resources");
       if (!loadAll(base, pc, fv, patches,
-          debugs != null && (debugs.size() == 0 || debugs.contains(fv.forgev)) || ecl))
+          debugs != null && (debugs.size() == 0 || debugs.contains(fv.name)) || ecl))
         return false;
       int ret = 0;
       if (fd != null && !skip) {
-        final String out = genOutPath(base, pc, fv, fd.config.mcv);
+        final String out = genOutPath(base, pc, fv, fv.name);
         final LinkedHashMap<Pattern, String> rep = processReplaces(pc, fv, fd.config.mcv);
         ret = Compiler.compile(fv, out, rep, fd, w1, w2);
       }
-      compiled.add(fv.forgev);
+      compiled.add(fv.name);
       if (ret != 0)
         return false;
     }
