@@ -11,12 +11,12 @@ import java.util.regex.Pattern;
 public class MavenWrapper {
   private final List<Downloader> jr = new ArrayList<Downloader>();
   private final List<Downloader> sc = new ArrayList<Downloader>();
-  private final List<Downloader> jd = new ArrayList<Downloader>();
   private final List<Downloader> nt = new ArrayList<Downloader>();
 
   public static final Pattern lib_nam = Pattern.compile("([^:]+):([^:]+):([^:]+)(?::([^:]+))?");
 
-  public void addDownload(final List<String> l) throws MalformedURLException {
+  public void addDownload(final List<String> l, final boolean src, final boolean nat)
+      throws MalformedURLException {
     if (l == null)
       return;
     for (final String s : l) {
@@ -24,9 +24,10 @@ public class MavenWrapper {
       if (!s.startsWith("http://") && !s.startsWith("https://") && m.matches()) {
         final String g = m.group(1), a = m.group(2), v = m.group(3);
         this.jr.add(new Downloader(g, a, v, m.group(4)));
-        this.sc.add(new Downloader(g, a, v, "sources"));
-        this.jd.add(new Downloader(g, a, v, "javadoc"));
-        this.nt.add(new Downloader(g, a, v, "natives-" + Constants.OS));
+        if (src)
+          this.sc.add(new Downloader(g, a, v, "sources"));
+        if (nat)
+          this.nt.add(new Downloader(g, a, v, "natives-" + Constants.OS));
       } else {
         final String n = s.replace(":", "%3A").replace("//", "/").replace('/', File.separatorChar);
         this.jr.add(new Downloader(n, new URL(s), "jar"));
@@ -57,13 +58,6 @@ public class MavenWrapper {
     return r;
   }
 
-  public static List<File> getJavadoc(final MavenWrapper... l) throws InterruptedException {
-    final List<File> r = new ArrayList<File>();
-    for (final MavenWrapper w : l)
-      getResult(w.jd, r);
-    return r;
-  }
-
   public static List<File> getNatives(final MavenWrapper... l) throws InterruptedException {
     final List<File> r = new ArrayList<File>();
     for (final MavenWrapper w : l)
@@ -71,10 +65,10 @@ public class MavenWrapper {
     return r;
   }
 
-  public static List<File> getLegacy(final List<String> l) throws MalformedURLException,
-      InterruptedException {
+  public static List<File> getLegacy(final List<String> l, final boolean src, final boolean nat)
+      throws MalformedURLException, InterruptedException {
     final MavenWrapper w = new MavenWrapper();
-    w.addDownload(l);
+    w.addDownload(l, src, nat);
     final List<File> r = new ArrayList<File>();
     getResult(w.jr, r);
     return r;

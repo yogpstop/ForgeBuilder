@@ -282,9 +282,9 @@ public final class Decompiler {
     }
     System.out.println("> Compile minecraft");
     final int ret =
-        Compiler.exec_javac(sources, null, MavenWrapper.getLegacy(this.m.json.getNames()), null,
-            new File(Constants.DATA_DIR, this.forgev + "-sources.jar"), new File(
-                Constants.DATA_DIR, this.forgev + "-dev.jar"), null);
+        Compiler.exec_javac(sources, null, MavenWrapper.getLegacy(this.m.json.getNames(), true,
+            false), null, new File(Constants.DATA_DIR, this.forgev + "-sources.jar"), new File(
+            Constants.DATA_DIR, this.forgev + "-dev.jar"), null);
     if (ret != 0)
       throw new IllegalStateException(Integer.toString(ret));
     System.out.println("> Save config");
