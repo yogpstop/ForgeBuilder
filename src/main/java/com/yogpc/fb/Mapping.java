@@ -256,8 +256,9 @@ public final class Mapping {
     StringBuffer sb;
     for (final String k : ks) {
       final List<String> ls = this.ff_patch.get(k);
+      final List<String> vs = new ArrayList<String>(ls);
       ls.clear();
-      for (final String v : new ArrayList<String>(ls)) {
+      for (final String v : vs) {
         m = PKG_PAT_BS.matcher(v);
         sb = new StringBuffer();
         while (m.find()) {
