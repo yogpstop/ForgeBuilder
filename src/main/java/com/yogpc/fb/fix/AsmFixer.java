@@ -3,6 +3,7 @@ package com.yogpc.fb.fix;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -12,6 +13,9 @@ import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -31,6 +35,10 @@ public class AsmFixer extends ClassLoader {
       return typeName;
     }
   }
+
+  private static final Remapper rmp = new MyRemapper();
+  private static final AsmFixer fixer = new AsmFixer();
+  private final Constructor<? extends ClassVisitor> con;
 
   private static final void fixConstructor(final ClassNode cn) {
     for (final MethodNode mn : cn.methods)
@@ -58,7 +66,26 @@ public class AsmFixer extends ClassLoader {
       }
   }
 
-  private static final Remapper rmp = new MyRemapper();
+  private static final void fixRemapEntries(final ClassNode cn) {
+    for (final MethodNode mn : cn.methods)
+      if ("remapEntries".equals(mn.name)
+          && "(I[Ljava/lang/Object;)[Ljava/lang/Object;".equals(mn.desc)) {
+        AbstractInsnNode in = mn.instructions.getFirst();
+        LabelNode ln = new LabelNode();
+        while (in != null) {
+          if (!(in instanceof LabelNode)) {
+            mn.instructions.insertBefore(in, new VarInsnNode(Opcodes.ALOAD, 2));
+            mn.instructions.insertBefore(in, new JumpInsnNode(Opcodes.IFNONNULL, ln));
+            mn.instructions.insertBefore(in, new VarInsnNode(Opcodes.ALOAD, 2));
+            mn.instructions.insertBefore(in, new InsnNode(Opcodes.ARETURN));
+            mn.instructions.insertBefore(in, ln);
+            break;
+          }
+          in = in.getNext();
+        }
+        break;
+      }
+  }
 
   private static final ClassNode get(final String name) throws IOException {
     final InputStream is = ClassVisitor.class.getClassLoader().getResource(name).openStream();
@@ -76,14 +103,17 @@ public class AsmFixer extends ClassLoader {
   }
 
   @SuppressWarnings("unchecked")
-  private final <T> Class<? extends T> write(final ClassNode cn) {
+  private final Constructor<? extends ClassVisitor> write(final ClassNode cn) {
     final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
     cn.accept(cw);
     final byte[] ba = cw.toByteArray();
-    return (Class<? extends T>) defineClass(cn.name.replace('/', '.'), ba, 0, ba.length, null);
+    try {
+      return (Constructor<? extends ClassVisitor>) defineClass(cn.name.replace('/', '.'), ba, 0,
+          ba.length, null).getConstructor(ClassVisitor.class, Remapper.class);
+    } catch (NoSuchMethodException e) {
+    }
+    return null;
   }
-
-  private final Class<? extends ClassVisitor> classAdapter;
 
   public AsmFixer() {
     super();
@@ -95,12 +125,13 @@ public class AsmFixer extends ClassLoader {
       throw new RuntimeException(e);
     }
     fixConstructor(rma);
+    fixRemapEntries(rma);
     write(rma);
-    this.classAdapter = write(rca);
+    this.con = write(rca);
   }
 
-  public ClassVisitor InitAdapter(final ClassVisitor cv, final Remapper rem) throws Exception {
-    return this.classAdapter.getConstructor(ClassVisitor.class, Remapper.class)
-        .newInstance(cv, rem);
+  public static ClassVisitor InitAdapter(final ClassVisitor cv, final Remapper rem)
+      throws Exception {
+    return fixer.con.newInstance(cv, rem);
   }
 }

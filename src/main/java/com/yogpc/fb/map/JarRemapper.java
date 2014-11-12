@@ -17,7 +17,6 @@ import com.yogpc.fb.asm.MainTransformer;
 import com.yogpc.fb.fix.AsmFixer;
 
 public class JarRemapper {
-  private static final AsmFixer fixer = new AsmFixer();
   private Map<String, ClassNode> nodes;
   private final Map<String, ClassNode> cp = new HashMap<String, ClassNode>();
 
@@ -51,7 +50,7 @@ public class JarRemapper {
     ClassNode out;
     for (final Map.Entry<String, ClassNode> e : this.nodes.entrySet()) {
       out = new ClassNode();
-      mapper = fixer.InitAdapter(out, r);
+      mapper = AsmFixer.InitAdapter(out, r);
       e.getValue().accept(mapper);
       ret.put(r.map(e.getKey()), out);
     }

@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.objectweb.asm.commons.Remapper;
-import org.objectweb.asm.commons.RemappingClassAdapter;
 import org.objectweb.asm.tree.ClassNode;
 
 import com.yogpc.fb.asm.MainTransformer;
+import com.yogpc.fb.fix.AsmFixer;
 
 public class MainAnalyzer extends Remapper {
   private final Map<String, Object> names = new HashMap<String, Object>();
@@ -32,7 +32,7 @@ public class MainAnalyzer extends Remapper {
     is.close();
   }
 
-  public List<String> process(final File arg) throws IOException {
+  public List<String> process(final File arg) throws Exception {
     final List<String> done = new ArrayList<String>();
     final Collection<String> todo = new ArrayList<String>();
     final InputStream is = new FileInputStream(arg);
@@ -46,7 +46,7 @@ public class MainAnalyzer extends Remapper {
             ;// TODO no stdlib missing class?
           continue;
         }
-        this.cp.get(s).accept(new RemappingClassAdapter(new ClassNode(), this));
+        this.cp.get(s).accept(AsmFixer.InitAdapter(new ClassNode(), this));
       }
       todo.clear();
       todo.addAll(this.names.keySet());

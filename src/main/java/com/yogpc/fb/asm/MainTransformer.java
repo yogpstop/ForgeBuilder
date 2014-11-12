@@ -66,7 +66,7 @@ public class MainTransformer {
   }
 
   static byte[] writeClassToBA(final ClassNode cn, final String idt) {
-    final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+    final ClassWriter cw = new ClassWriter(0);
     cn.accept(cw);
     if (idt != null)
       cw.newUTF8(idt);
@@ -76,7 +76,7 @@ public class MainTransformer {
   static ClassNode readClassFromBA(final byte[] ba) {
     final ClassReader cr = new ClassReader(ba);
     final ClassNode cn = new ClassNode();
-    cr.accept(cn, ClassReader.EXPAND_FRAMES);
+    cr.accept(cn, 0);
     return cn;
   }
 
