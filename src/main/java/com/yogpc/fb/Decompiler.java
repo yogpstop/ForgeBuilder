@@ -227,6 +227,7 @@ public final class Decompiler {
           continue;
         ud.patch(t, false, d1, d2, d3, false);
         done = true;
+        break;
       }
       if (!done)
         return false;
