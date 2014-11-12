@@ -1,5 +1,6 @@
 package com.yogpc.fb;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -211,6 +212,28 @@ public final class Decompiler {
     return new File[] {a[0].process(null), a[1].process(null), a[2].process(null)};
   }
 
+  private final boolean ffpatch(final Map<String, String> t, final File d1, final File d2,
+      final File d3) throws IOException {
+    for (final List<String> l : this.m.ff_patch.values()) {
+      boolean done = false;
+      for (final String s : l) {
+        final UnifiedDiff ud = new UnifiedDiff();
+        final Reader r = new StringReader(s);
+        final BufferedReader br = new BufferedReader(r);
+        ud.add(br, -1);
+        br.close();
+        r.close();
+        if (!ud.patch(t, true, d1, d2, d3, false))
+          continue;
+        ud.patch(t, false, d1, d2, d3, false);
+        done = true;
+      }
+      if (!done)
+        return false;
+    }
+    return true;
+  }
+
   private final boolean decompile() throws Exception {
     File dbg1 = new File(Constants.DATA_DIR, "debug");
     final File dbg2 = new File(dbg1, "to");
@@ -233,7 +256,7 @@ public final class Decompiler {
     final Map<String, String> sources = ffpatcher(tmp);
     tmp.delete();
     System.out.println("> Apply ffpatch");
-    if (!this.m.ff_patch.patch(sources, false, dbg1, dbg2, dbg3, false))
+    if (!ffpatch(sources, dbg1, dbg2, dbg3))
       return false;
     System.out.println("> Apply astyle");
     astyle(sources);

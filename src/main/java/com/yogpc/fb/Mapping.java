@@ -50,11 +50,10 @@ public final class Mapping {
   private static final Pattern PKG_PAT_FS = Pattern.compile("net/minecraft/src/[A-Za-z0-9$_]+");
 
   public final JarMapping ss = new JarMapping();
-  final UnifiedDiff ff_patch = new UnifiedDiff();
   final UnifiedDiff fml_patches = new UnifiedDiff();
   final UnifiedDiff forge_patches = new UnifiedDiff();
   public final Map<String, byte[]> sources = new HashMap<String, byte[]>();
-  private final StringBuilder local_ff_patch_buf = new StringBuilder();
+  final Map<String, List<String>> ff_patch = new HashMap<String, List<String>>();
   CompleteMinecraftVersion json;
   public String[] merge_buf;
   public final Properties mci_cfg = new Properties();
@@ -208,9 +207,9 @@ public final class Mapping {
           MappingBuilder.loadA(new String(d, Utils.ISO_8859_1), this.ss, true, false);
         else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.endsWith(".srg"))
           MappingBuilder.loadSrg(new String(d, Utils.ISO_8859_1), this.ss);
-        else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.endsWith(".patch")
+        else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.contains(".patch")
             && !n.contains("minecraft_server_ff"))
-          loadFFPatch(d);
+          loadFFPatch(n, d);
         else if (n.startsWith("forge/fml/patches/minecraft/")
             || n.startsWith("forge/fml/patches/common/"))
           load_patch(d, this.fml_patches);
@@ -252,21 +251,26 @@ public final class Mapping {
     this.gradle = this.local_fmlpy_buf == null;
     if (this.json == null && this.local_fmlpy_buf != null)
       generateJson();
-    Matcher m = PKG_PAT_BS.matcher(this.local_ff_patch_buf);
-    StringBuffer sb = new StringBuffer();
-    while (m.find()) {
-      final String s = this.ss.toPkd("net/minecraft/src/" + m.group(1));
-      if (s != null) {
-        m.appendReplacement(sb, "");
-        sb.append(s);
+    final List<String> ks = new ArrayList<String>(this.ff_patch.keySet());
+    Matcher m;
+    StringBuffer sb;
+    for (final String k : ks) {
+      final List<String> ls = this.ff_patch.get(k);
+      ls.clear();
+      for (final String v : new ArrayList<String>(ls)) {
+        m = PKG_PAT_BS.matcher(v);
+        sb = new StringBuffer();
+        while (m.find()) {
+          final String s = this.ss.toPkd("net/minecraft/src/" + m.group(1));
+          if (s != null) {
+            m.appendReplacement(sb, "");
+            sb.append(s);
+          }
+        }
+        m.appendTail(sb);
+        ls.add(sb.toString());
       }
     }
-    m.appendTail(sb);
-    Reader r = new StringReader(sb.toString());
-    final BufferedReader br = new BufferedReader(r);
-    this.ff_patch.add(br, -1);
-    br.close();
-    r.close();
     // //////////////////////////////////////////////////////////////
     m = PKG_PAT_FS.matcher(new String(this.local_mci_buf));
     sb = new StringBuffer();
@@ -278,7 +282,7 @@ public final class Mapping {
       }
     }
     m.appendTail(sb);
-    r = new StringReader(sb.toString());
+    final Reader r = new StringReader(sb.toString());
     this.mci_cfg.load(r);
     r.close();
     MappingBuilder.fix(this.ss);
@@ -335,8 +339,12 @@ public final class Mapping {
     r.close();
   }
 
-  private final void loadFFPatch(final byte[] patch) {
-    this.local_ff_patch_buf.append(new String(patch, Utils.ISO_8859_1));
+  private final void loadFFPatch(final String name, final byte[] patch) {
+    final String s = name.substring(name.lastIndexOf('/') + 1, name.lastIndexOf(".patch"));
+    List<String> l = this.ff_patch.get(s);
+    if (l == null)
+      this.ff_patch.put(s, l = new ArrayList<String>());
+    l.add(new String(patch, Utils.ISO_8859_1));
   }
 
   private final void load_file(final String name, final byte[] data) {
