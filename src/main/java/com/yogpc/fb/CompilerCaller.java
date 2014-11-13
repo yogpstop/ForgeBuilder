@@ -197,7 +197,9 @@ public final class CompilerCaller {
         debug = true;
       } else if (arg.startsWith("-e"))
         ecl = arg.substring(2);
-      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null))
+      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null)) {
         System.err.println("<<< Compile is failed!");
+        System.exit(-1);
+      }
   }
 }
