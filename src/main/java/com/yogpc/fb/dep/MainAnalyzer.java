@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.objectweb.asm.commons.Remapper;
@@ -32,8 +31,8 @@ public class MainAnalyzer extends Remapper {
     is.close();
   }
 
-  public List<String> process(final File arg) throws Exception {
-    final List<String> done = new ArrayList<String>();
+  public Collection<String> process(final File arg) throws Exception {
+    final Collection<String> done = new ArrayList<String>();
     final Collection<String> todo = new ArrayList<String>();
     final InputStream is = new FileInputStream(arg);
     MainTransformer.read_jar(is, todo, this.cp, null, null);
@@ -41,18 +40,14 @@ public class MainAnalyzer extends Remapper {
     do {
       for (final String s : todo) {
         done.add(s);
-        if (!this.cp.containsKey(s)) {
-          if (!s.startsWith("java/") && !s.startsWith("javax/"))
-            ;// TODO no stdlib missing class?
+        if (!this.cp.containsKey(s))
           continue;
-        }
         this.cp.get(s).accept(AsmFixer.InitAdapter(new ClassNode(), this));
       }
       todo.clear();
       todo.addAll(this.names.keySet());
       this.names.clear();
-      for (final String s : done)
-        todo.remove(s);
+      todo.removeAll(done);
     } while (todo.size() > 0);
     return done;
   }

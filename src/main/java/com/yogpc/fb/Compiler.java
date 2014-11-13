@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -122,11 +123,11 @@ public final class Compiler {
             fv.manifest);
     if (i != 0)
       return i;
-    List<String> depCls = null;
+    Collection<String> depCls = null;
     if (fv.contains != null) {
       System.out.println("> Resolve Class Dependencies");
       final MainAnalyzer ma = new MainAnalyzer();
-      for (final File f : MavenWrapper.getJar(w1, w2))
+      for (final File f : MavenWrapper.getJar(w1))
         ma.addCP(f);
       ma.addCP(fd.jar);
       depCls = ma.process(new File(out + "-dev.jar"));

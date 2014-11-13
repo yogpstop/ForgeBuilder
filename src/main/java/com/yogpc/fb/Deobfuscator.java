@@ -28,9 +28,9 @@ public class Deobfuscator implements IProcessor {
         in = arg.substring(2);
       else if (arg.startsWith("-c"))
         cp.add(arg.substring(2));
-      else if (arg.startsWith("-s"))
+      else if (arg.equals("-s"))
         b = new Boolean(true);
-      else if (arg.startsWith("-b"))
+      else if (arg.equals("-b"))
         b = new Boolean(false);
     final int fvi = Integer.parseInt(fv);
     if (b == null)

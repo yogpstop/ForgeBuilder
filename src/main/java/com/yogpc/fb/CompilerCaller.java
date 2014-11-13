@@ -155,8 +155,8 @@ public final class CompilerCaller {
       final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
       if (ecl || !skip) {
         fd = ForgeData.get(fv.forgev);
-        w1.addDownload(fv.depends, true, false, fv.forgev);
-        w2.addDownload(fd.config.depends, true, false, fv.forgev);
+        w1.addDownload(fv.depends, ecl, false, fv.forgev);
+        w2.addDownload(fd.config.depends, ecl, false, fv.forgev);
         System.out.println("> Downloading dependencies");
         MavenWrapper.getJar(w1, w2);// Wait for download
         MavenWrapper.getSources(w1, w2);

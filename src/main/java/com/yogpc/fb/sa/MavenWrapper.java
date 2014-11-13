@@ -94,10 +94,9 @@ public class MavenWrapper {
     return r;
   }
 
-  public static List<File> getLegacy(final List<String> l, final boolean src, final boolean nat,
-      final String fv) throws Exception {
+  public static List<File> getLegacy(final List<String> l, final String fv) throws Exception {
     final MavenWrapper w = new MavenWrapper();
-    w.addDownload(l, src, nat, fv);
+    w.addDownload(l, false, false, fv);
     final List<File> r = new ArrayList<File>();
     getResult(w.jr, r);
     return r;
