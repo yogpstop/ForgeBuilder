@@ -17,13 +17,13 @@ import com.yogpc.fb.sa.Constants;
 public class ForgeData {
   private static final HashMap<String, ForgeData> versions = new HashMap<String, ForgeData>();
 
-  static class ForgeConfig {
+  public static class ForgeConfig {
     String identifier;
     String mcv;
-    List<String> depends;
+    public List<String> depends;
   };
 
-  final ForgeConfig config;
+  public final ForgeConfig config;
   final JarMapping srg = new JarMapping();
   final File jar;
 

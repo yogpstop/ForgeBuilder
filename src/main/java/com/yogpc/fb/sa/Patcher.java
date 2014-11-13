@@ -1,4 +1,4 @@
-package com.yogpc.fb;
+package com.yogpc.fb.sa;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.yogpc.fb.sa.Utils;
 
 public class Patcher {
   private static enum RegexpType {
@@ -244,8 +242,8 @@ public class Patcher {
     return ud.patch(target, false, in, out, rej, debug);
   }
 
-  static boolean applyPatch(final Map<String, String> patch, final ProjectConfig.ForgeVersion v,
-      final boolean debug, final File base) throws IOException {
+  public static boolean applyPatch(final Map<String, String> patch,
+      final ProjectConfig.ForgeVersion v, final boolean debug, final File base) throws IOException {
     applyFileCsv(patch.get(v.name + "-file.csv"), patch, v.srces);
     applyImportCsv(patch.get(v.name + "-import.csv"), v.srces);
     applyRegexpCsv(patch.get(v.name + "-regexp.csv"), v.srces);

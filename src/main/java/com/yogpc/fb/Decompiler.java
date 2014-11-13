@@ -12,7 +12,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +36,7 @@ import com.yogpc.fb.map.MappingBuilder;
 import com.yogpc.fb.sa.Constants;
 import com.yogpc.fb.sa.Downloader;
 import com.yogpc.fb.sa.MavenWrapper;
+import com.yogpc.fb.sa.UnifiedDiff;
 import com.yogpc.fb.sa.Utils;
 
 public final class Decompiler {
@@ -201,7 +201,7 @@ public final class Decompiler {
   private static final String MC_BASE = "https://s3.amazonaws.com/Minecraft.Download/versions/";
   private static final File MINECRAFT_VERSIONS = new File(Constants.MINECRAFT_DIR, "versions");
 
-  private final File[] download() throws MalformedURLException, IOException, InterruptedException {
+  private final File[] download() throws Exception {
     final Downloader[] a =
         new Downloader[] {
             new Downloader(this.forgev, new URL(this.url), "jar"),
@@ -307,8 +307,8 @@ public final class Decompiler {
     System.out.println("> Compile minecraft");
     final int ret =
         Compiler.exec_javac(sources, null, MavenWrapper.getLegacy(this.m.json.getNames(), true,
-            false), null, new File(Constants.DATA_DIR, this.forgev + "-sources.jar"), new File(
-            Constants.DATA_DIR, this.forgev + "-dev.jar"), null);
+            false, this.forgev), null, new File(Constants.DATA_DIR, this.forgev + "-sources.jar"),
+            new File(Constants.DATA_DIR, this.forgev + "-dev.jar"), null);
     if (ret != 0)
       throw new IllegalStateException(Integer.toString(ret));
     System.out.println("> Save config");

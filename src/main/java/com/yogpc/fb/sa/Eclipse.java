@@ -1,4 +1,4 @@
-package com.yogpc.fb;
+package com.yogpc.fb.sa;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,8 +17,7 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import com.yogpc.fb.sa.Constants;
-import com.yogpc.fb.sa.MavenWrapper;
+import com.yogpc.fb.ForgeData;
 
 public class Eclipse {
   private static String getPath(final String group, final String artifact, final String version,
@@ -57,16 +56,33 @@ public class Eclipse {
   }
 
   private static Element getLibrary(final Document d, final String l) {
-    final Matcher m = MavenWrapper.lib_nam.matcher(l);
     String lib = null, source = null;
-    if (!l.startsWith("http://") && !l.startsWith("https://") && m.matches()) {
-      lib = getPath(m.group(1), m.group(2), m.group(3), m.group(4));
-      source = getPath(m.group(1), m.group(2), m.group(3), "sources");
-    } else {
-      lib = l.replace(":", "%3A").replace("//", "/");
-      if (!lib.endsWith("/"))
-        lib += "/";
-      lib += "file.jar";
+    final String[] pl = Utils.split(l, '|');
+    for (final String p : pl) {
+      final int i = p.indexOf('`');
+      if (i < 0) {
+        final Matcher m = MavenWrapper.lib_nam.matcher(l);
+        m.matches();
+        lib = getPath(m.group(1), m.group(2), m.group(3), m.group(4));
+        source = getPath(m.group(1), m.group(2), m.group(3), "sources");
+      } else {
+        final String pr = p.substring(0, i);
+        final String u = p.substring(i + 1);
+        switch (pr.charAt(0)) {
+          case 'U':
+            lib = u.replace(":", "%3A").replace("//", "/");
+            if (!lib.endsWith("/"))
+              lib += "/";
+            lib += "file.jar";
+            break;
+          case 'D':
+            if (lib != null) {
+              final int j = lib.lastIndexOf('.');
+              lib = lib.substring(0, j) + "-dev" + lib.substring(j);
+            }
+            break;
+        }
+      }
     }
     if ((lib = get(lib)) == null)
       return null;
@@ -183,7 +199,7 @@ public class Eclipse {
     transformer.transform(source, result);
   }
 
-  static void createEclipse(final File base, final ForgeData fd, final ProjectConfig pc,
+  public static void createEclipse(final File base, final ForgeData fd, final ProjectConfig pc,
       final ProjectConfig.ForgeVersion fv) throws Exception {
     System.out.println("> Create eclipse project");
     createProject(base, pc.artifactId);

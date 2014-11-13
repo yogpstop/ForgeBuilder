@@ -18,7 +18,7 @@ public class Bootstrap {
     for (final File f : MavenWrapper.getLegacy(
         Arrays.asList(new String[] {"org.ow2.asm:asm-all:4.2",
             "com.github.abrarsyed.jastyle:jAstyle:1.2", "com.google.code.gson:gson:2.3"}), false,
-        false))
+        false, null))
       addURL.invoke(cl, f.toURI().toURL());
     System.out.println("> Downloading is done.");
     String main;

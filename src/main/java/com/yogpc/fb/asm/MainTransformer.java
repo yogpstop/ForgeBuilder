@@ -65,7 +65,7 @@ public class MainTransformer {
       throw new UnsupportedOperationException(o == null ? "null" : o.toString());
   }
 
-  static byte[] writeClassToBA(final ClassNode cn, final String idt) {
+  private static byte[] writeClassToBA(final ClassNode cn, final String idt) {
     final ClassWriter cw = new ClassWriter(0);
     cn.accept(cw);
     if (idt != null)
@@ -73,7 +73,7 @@ public class MainTransformer {
     return cw.toByteArray();
   }
 
-  static ClassNode readClassFromBA(final byte[] ba) {
+  private static ClassNode readClassFromBA(final byte[] ba) {
     final ClassReader cr = new ClassReader(ba);
     final ClassNode cn = new ClassNode();
     cr.accept(cn, 0);

@@ -28,6 +28,7 @@ import com.yogpc.fb.fg.FmlCleanup;
 import com.yogpc.fb.map.JarMapping;
 import com.yogpc.fb.map.MappingBuilder;
 import com.yogpc.fb.ml.CompleteMinecraftVersion;
+import com.yogpc.fb.sa.UnifiedDiff;
 import com.yogpc.fb.sa.Utils;
 
 public final class Mapping {

@@ -1,16 +1,24 @@
 package com.yogpc.fb;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+
+import javax.xml.bind.DatatypeConverter;
 
 import com.yogpc.fb.asm.MainTransformer;
 import com.yogpc.fb.map.JarMapping;
-import com.yogpc.fb.sa.Constants;
+import com.yogpc.fb.sa.IProcessor;
 
-public class Deobfuscator {
+public class Deobfuscator implements IProcessor {
   public static void main(final String[] args) throws Exception {
-    String fv = "", in = "", out = "";
+    String fv = "", in = "";
     Boolean b = null;
     final List<String> cp = new ArrayList<String>();
     for (final String arg : args)
@@ -18,8 +26,6 @@ public class Deobfuscator {
         fv = arg.substring(2);
       else if (arg.startsWith("-i"))
         in = arg.substring(2);
-      else if (arg.startsWith("-o"))
-        out = arg.substring(2);
       else if (arg.startsWith("-c"))
         cp.add(arg.substring(2));
       else if (arg.startsWith("-s"))
@@ -29,25 +35,85 @@ public class Deobfuscator {
     final int fvi = Integer.parseInt(fv);
     if (b == null)
       b = new Boolean(fvi > 534);
-    final ForgeData fd = ForgeData.get(fv);
-    final MainTransformer mt = new MainTransformer(fvi, null, fd.srg);
-    for (final String s : cp)
-      mt.addCP(new File(s));
-    final String[] s = out.split(":");
-    final StringBuilder sb = new StringBuilder();
-    sb.append(s[0].replace(".", File.separator));
-    sb.append(File.separator);
-    sb.append(s[1]);
-    sb.append(File.separator);
-    sb.append(s[2]);
-    sb.append(File.separator);
-    sb.append(s[1]);
-    sb.append('-');
-    sb.append(s[2]);
-    sb.append("-dev.jar");
-    final File fo = new File(Constants.MINECRAFT_LIBRARIES, sb.toString());
-    fo.getParentFile().mkdirs();
-    mt.process_jar(new File(in), fo, null, null, b.booleanValue() ? JarMapping.SRG_RAW
-        : JarMapping.OBF_RAW);
+    new Deobfuscator(b.booleanValue(), fv, cp).process(new File(in));
+  }
+
+  private final boolean srg;
+  private final String fv;
+  private final List<String> cp;
+
+  public Deobfuscator(final boolean srg, final String fv, final List<String> cp) {
+    this.srg = srg;
+    this.fv = fv;
+    this.cp = cp == null ? new ArrayList<String>() : cp;
+  }
+
+  private static final boolean check(final File in, final File out, final File cfg,
+      final Properties p) throws Exception {
+    InputStream is = null;
+    if (cfg.isFile()) {
+      is = new FileInputStream(cfg);
+      p.load(is);
+      is.close();
+    }
+    final MessageDigest md = MessageDigest.getInstance("SHA-512");
+    final byte[] buf = new byte[8192];
+    int nread;
+    is = new FileInputStream(in);
+    while ((nread = is.read(buf)) > -1)
+      md.update(buf, 0, nread);
+    is.close();
+    String hash = DatatypeConverter.printHexBinary(md.digest());
+    if (!hash.equals(p.getProperty("IN_HASH"))) {
+      p.setProperty("IN_HASH", hash);
+      return false;
+    }
+    if (!out.isFile())
+      return false;
+    is = new FileInputStream(out);
+    while ((nread = is.read(buf)) > -1)
+      md.update(buf, 0, nread);
+    is.close();
+    hash = DatatypeConverter.printHexBinary(md.digest());
+    if (!hash.equals(p.getProperty("OUT_HASH")))
+      return false;
+    return true;
+  }
+
+  private IProcessor child;
+
+  @Override
+  public File process(final File in) throws Exception {
+    String op = in.getPath();
+    final int i = op.lastIndexOf('.');
+    final String ext = op.substring(i);
+    op = op.substring(0, i) + "-dev";
+    final File out = new File(op + ext);
+    final File cfg = new File(op + ".cfg");
+    final Properties p = new Properties();
+    if (!check(in, out, cfg, p)) {
+      final ForgeData fd = ForgeData.get(this.fv);
+      final MainTransformer mt = new MainTransformer(Integer.parseInt(this.fv), null, fd.srg);
+      for (final String s : this.cp)
+        mt.addCP(new File(s));
+      mt.process_jar(in, out, null, null, this.srg ? JarMapping.SRG_RAW : JarMapping.OBF_RAW);
+      final MessageDigest md = MessageDigest.getInstance("SHA-512");
+      final byte[] buf = new byte[8192];
+      int nread;
+      final InputStream is = new FileInputStream(out);
+      while ((nread = is.read(buf)) > -1)
+        md.update(buf, 0, nread);
+      is.close();
+      p.setProperty("OUT_HASH", DatatypeConverter.printHexBinary(md.digest()));
+    }
+    final OutputStream os = new FileOutputStream(cfg);
+    p.store(os, null);
+    os.close();
+    return this.child != null ? this.child.process(out) : out;
+  }
+
+  @Override
+  public void setChild(final IProcessor ip) {
+    this.child = ip;
   }
 }

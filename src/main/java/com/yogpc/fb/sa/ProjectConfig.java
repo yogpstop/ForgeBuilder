@@ -1,10 +1,8 @@
-package com.yogpc.fb;
+package com.yogpc.fb.sa;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.gson.annotations.Expose;
 
 public class ProjectConfig {
   public static class ForgeVersion {
@@ -16,7 +14,6 @@ public class ProjectConfig {
     public List<String> depends;
     public String output;
     public List<String> contains;
-    @Expose
     public final Map<String, String> srces = new HashMap<String, String>();
   }
 

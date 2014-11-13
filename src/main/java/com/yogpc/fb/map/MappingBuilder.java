@@ -6,7 +6,7 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.yogpc.fb.CSVParser;
+import com.yogpc.fb.sa.CSVParser;
 import com.yogpc.fb.sa.Utils;
 
 public class MappingBuilder {

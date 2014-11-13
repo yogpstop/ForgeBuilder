@@ -71,7 +71,7 @@ public class AsmFixer extends ClassLoader {
       if ("remapEntries".equals(mn.name)
           && "(I[Ljava/lang/Object;)[Ljava/lang/Object;".equals(mn.desc)) {
         AbstractInsnNode in = mn.instructions.getFirst();
-        LabelNode ln = new LabelNode();
+        final LabelNode ln = new LabelNode();
         while (in != null) {
           if (!(in instanceof LabelNode)) {
             mn.instructions.insertBefore(in, new VarInsnNode(Opcodes.ALOAD, 2));
@@ -110,7 +110,7 @@ public class AsmFixer extends ClassLoader {
     try {
       return (Constructor<? extends ClassVisitor>) defineClass(cn.name.replace('/', '.'), ba, 0,
           ba.length, null).getConstructor(ClassVisitor.class, Remapper.class);
-    } catch (NoSuchMethodException e) {
+    } catch (final NoSuchMethodException e) {
     }
     return null;
   }

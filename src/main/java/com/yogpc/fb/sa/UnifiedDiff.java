@@ -1,4 +1,4 @@
-package com.yogpc.fb;
+package com.yogpc.fb.sa;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.yogpc.fb.sa.Utils;
 
 public final class UnifiedDiff {
   private final List<PFile> files = new LinkedList<PFile>();
@@ -229,7 +227,7 @@ public final class UnifiedDiff {
     }
   }
 
-  final void add(final BufferedReader br, final int p) throws IOException {
+  public final void add(final BufferedReader br, final int p) throws IOException {
     String l;
     PFile f = null;
     while ((l = br.readLine()) != null)
@@ -253,7 +251,7 @@ public final class UnifiedDiff {
     }
   }
 
-  final boolean patch(final Map<String, String> target, final boolean dry, final File in,
+  public final boolean patch(final Map<String, String> target, final boolean dry, final File in,
       final File out, final File rej, final boolean force) throws IOException {
     final Map<String, String> bak = new HashMap<String, String>(target);
     final Map<String, String> rejs = new HashMap<String, String>();

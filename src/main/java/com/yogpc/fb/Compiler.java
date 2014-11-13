@@ -16,11 +16,11 @@ import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import com.yogpc.fb.ProjectConfig.ForgeVersion;
 import com.yogpc.fb.asm.MainTransformer;
 import com.yogpc.fb.dep.MainAnalyzer;
 import com.yogpc.fb.map.JarMapping;
 import com.yogpc.fb.sa.MavenWrapper;
+import com.yogpc.fb.sa.ProjectConfig.ForgeVersion;
 import com.yogpc.fb.sa.Utils;
 
 public final class Compiler {

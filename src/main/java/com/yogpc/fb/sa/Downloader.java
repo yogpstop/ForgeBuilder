@@ -76,8 +76,7 @@ public class Downloader implements Runnable, IProcessor {
   }
 
   private static final String[] REPOS = {"http://repo.maven.apache.org/maven2/",
-      Constants.FORGE_BASE + "maven/", "https://libraries.minecraft.net/",
-      "http://chickenbones.net/maven/", "http://maven.ic2.player.to/"};
+      Constants.FORGE_BASE + "maven/", "https://libraries.minecraft.net/"};
 
   private static File downloadMaven(final String group, final String artifact,
       final String version, final String sub) throws IOException, NoSuchAlgorithmException {
@@ -159,7 +158,7 @@ public class Downloader implements Runnable, IProcessor {
   private IProcessor child;
 
   @Override
-  public File process(final File in) throws InterruptedException {
+  public File process(final File in) throws Exception {
     this.t.join();
     return this.child != null ? this.child.process(this.ret) : this.ret;
   }
