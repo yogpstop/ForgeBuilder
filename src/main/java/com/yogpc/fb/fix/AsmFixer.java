@@ -111,8 +111,8 @@ public class AsmFixer extends ClassLoader {
       return (Constructor<? extends ClassVisitor>) defineClass(cn.name.replace('/', '.'), ba, 0,
           ba.length, null).getConstructor(ClassVisitor.class, Remapper.class);
     } catch (final NoSuchMethodException e) {
+      return null;
     }
-    return null;
   }
 
   public AsmFixer() {

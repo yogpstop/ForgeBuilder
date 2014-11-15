@@ -33,28 +33,44 @@ public final class CompilerCaller {
   }
 
   private static String genOutPath(final File base, final ProjectConfig c,
-      final ProjectConfig.ForgeVersion v, final String mcv) {
+      final ProjectConfig.ForgeVersion v, final String mcv, final boolean maven) {
     File ret;
-    if (v.output != null)
-      ret = new File(base, replace_vnum(v.output, c, v, mcv));
-    else if (c.output != null)
-      ret = new File(base, replace_vnum(c.output, c, v, mcv));
-    else {
+    if (maven) {
       final StringBuilder sb = new StringBuilder();
       sb.append(c.groupId.replace(".", File.separator));
       sb.append(File.separator);
       sb.append(c.artifactId);
       sb.append(File.separator);
-      sb.append(mcv);
-      sb.append('-');
+      if (v.name != null) {
+        sb.append(v.name);
+        sb.append('-');
+      }
       sb.append(c.version);
       sb.append(File.separator);
       sb.append(c.artifactId);
       sb.append('-');
-      sb.append(mcv);
-      sb.append('-');
+      if (v.name != null) {
+        sb.append(v.name);
+        sb.append('-');
+      }
       sb.append(c.version);
       ret = new File(Constants.MINECRAFT_LIBRARIES, sb.toString());
+    } else if (v.output != null)
+      ret = new File(base, replace_vnum(v.output, c, v, mcv));
+    else if (c.output != null)
+      ret = new File(base, replace_vnum(c.output, c, v, mcv));
+    else {
+      final StringBuilder sb = new StringBuilder();
+      sb.append("target");
+      sb.append(File.separator);
+      sb.append(c.artifactId);
+      sb.append('-');
+      if (v.name != null) {
+        sb.append(v.name);
+        sb.append('-');
+      }
+      sb.append(c.version);
+      ret = new File(base, sb.toString());
     }
     return ret.getPath();
   }
@@ -120,9 +136,13 @@ public final class CompilerCaller {
     return true;
   }
 
+  private static final boolean has(final List<String> l, final ProjectConfig.ForgeVersion v) {
+    return l != null && (l.size() == 0 || l.contains(v.name == null ? v.forgev : v.name));
+  }
+
   private static boolean build(final String _base, final List<String> debugs, final String eclipse,
-      final List<String> skips) throws Exception {
-    System.out.print("<<< Start compile ");
+      final List<String> skips, final boolean maven) throws Exception {
+    System.out.print("<<< Start project ");
     System.out.println(_base);
     final LinkedList<String> compiled = new LinkedList<String>();
     final File base = new File(_base).getCanonicalFile();
@@ -148,10 +168,10 @@ public final class CompilerCaller {
         q.add(fv);
         continue;
       }
-      System.out.print("<< Start forge ");
-      System.out.println(fv.name);
-      final boolean ecl = fv.name.equals(eclipse);
-      final boolean skip = skips != null && (skips.size() == 0 || skips.contains(fv.name));
+      System.out.print("<< Start compile of ");
+      System.out.println(fv.name == null ? fv.forgev : fv.name);
+      final boolean ecl = (fv.name == null ? fv.forgev : fv.name).equals(eclipse);
+      final boolean skip = has(skips, fv);
       final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
       if (ecl || !skip) {
         fd = ForgeData.get(fv.forgev);
@@ -164,16 +184,15 @@ public final class CompilerCaller {
           Eclipse.createEclipse(base, fd, pc, fv);
       }
       System.out.println("> Load sources and resources");
-      if (!loadAll(base, pc, fv, patches,
-          debugs != null && (debugs.size() == 0 || debugs.contains(fv.name)) || ecl))
+      if (!loadAll(base, pc, fv, patches, has(debugs, fv) || ecl))
         return false;
       int ret = 0;
       if (fd != null && !skip) {
-        final String out = genOutPath(base, pc, fv, fv.name);
+        final String out = genOutPath(base, pc, fv, fd.config.mcv, maven);
         final LinkedHashMap<Pattern, String> rep = processReplaces(pc, fv, fd.config.mcv);
         ret = Compiler.compile(fv, out, rep, fd, w1, w2);
       }
-      compiled.add(fv.name);
+      compiled.add(fv.name == null ? fv.forgev : fv.name);
       if (ret != 0)
         return false;
     }
@@ -184,7 +203,7 @@ public final class CompilerCaller {
   public static void main(final String[] args) throws Exception {
     final List<String> skips = new ArrayList<String>();
     final List<String> debugs = new ArrayList<String>();
-    boolean skip = false, debug = false;
+    boolean skip = false, debug = false, maven = false;
     String ecl = null;
     for (final String arg : args)
       if (arg.startsWith("-s")) {
@@ -197,7 +216,9 @@ public final class CompilerCaller {
         debug = true;
       } else if (arg.startsWith("-e"))
         ecl = arg.substring(2);
-      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null)) {
+      else if (arg.equals("-m"))
+        maven = true;
+      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null, maven)) {
         System.err.println("<<< Compile is failed!");
         System.exit(-1);
       }

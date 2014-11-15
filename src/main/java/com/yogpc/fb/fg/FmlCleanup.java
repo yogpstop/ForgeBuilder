@@ -45,7 +45,7 @@ public class FmlCleanup {
     public int compare(final String str1, final String str2) {
       return compare_in(str1, str2) * (this.inv ? -1 : 1);
     }
-  };
+  }
 
   public static String renameClass(final String text, final int forgevi) {
     final String[] lines = text.split("(\r\n|\r|\n)");

@@ -46,6 +46,7 @@ public class LaunchClassLoader extends URLClassLoader {
       final IClassTransformer trans = (IClassTransformer) loadClass(name).newInstance();
       this.transformers.add(trans);
     } catch (final Exception e) {
+      e.printStackTrace();
     }
   }
 
@@ -182,6 +183,7 @@ public class LaunchClassLoader extends URLClassLoader {
       final Method mainMethod = clazz.getMethod("main", new Class[] {String[].class});
       mainMethod.invoke(null, (Object) argument);
     } catch (final Exception e) {
+      e.printStackTrace();
     }
   }
 }

@@ -21,7 +21,7 @@ public class ForgeData {
     String identifier;
     String mcv;
     public List<String> depends;
-  };
+  }
 
   public final ForgeConfig config;
   final JarMapping srg = new JarMapping();
