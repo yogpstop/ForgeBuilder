@@ -137,7 +137,8 @@ public final class Decompiler {
     l.add(tmp.getPath());
     final Process p = new ProcessBuilder(l).redirectErrorStream(true).start();
     final InputStream is = p.getInputStream();
-    while (is.read() > -1);// prevent stop
+    while (is.read() > -1)
+      continue;// prevent stop
     is.close();
     final int ret = p.waitFor();
     in.delete();

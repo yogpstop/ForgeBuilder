@@ -33,7 +33,8 @@ public final class CompilerCaller {
   }
 
   private static String genOutPath(final File base, final ProjectConfig c,
-      final ProjectConfig.ForgeVersion v, final String mcv, final boolean maven) {
+      final ProjectConfig.ForgeVersion v, final String mcv, final boolean maven,
+      final boolean omit, final String cv) {
     File ret;
     if (maven) {
       final StringBuilder sb = new StringBuilder();
@@ -41,15 +42,23 @@ public final class CompilerCaller {
       sb.append(File.separator);
       sb.append(c.artifactId);
       sb.append(File.separator);
-      if (v.name != null) {
+      if (cv != null) {
+        sb.append(cv);
+        sb.append('-');
+      } else if (v.name != null) {
         sb.append(v.name);
         sb.append('-');
       }
       sb.append(c.version);
       sb.append(File.separator);
-      sb.append(c.artifactId);
-      sb.append('-');
-      if (v.name != null) {
+      if (!omit) {
+        sb.append(c.artifactId);
+        sb.append('-');
+      }
+      if (cv != null) {
+        sb.append(cv);
+        sb.append('-');
+      } else if (v.name != null) {
         sb.append(v.name);
         sb.append('-');
       }
@@ -63,9 +72,14 @@ public final class CompilerCaller {
       final StringBuilder sb = new StringBuilder();
       sb.append("target");
       sb.append(File.separator);
-      sb.append(c.artifactId);
-      sb.append('-');
-      if (v.name != null) {
+      if (!omit) {
+        sb.append(c.artifactId);
+        sb.append('-');
+      }
+      if (cv != null) {
+        sb.append(cv);
+        sb.append('-');
+      } else if (v.name != null) {
         sb.append(v.name);
         sb.append('-');
       }
@@ -141,7 +155,8 @@ public final class CompilerCaller {
   }
 
   private static boolean build(final String _base, final List<String> debugs, final String eclipse,
-      final List<String> skips, final boolean maven) throws Exception {
+      final List<String> skips, final boolean maven, final boolean omit, final String version)
+      throws Exception {
     System.out.print("<<< Start project ");
     System.out.println(_base);
     final LinkedList<String> compiled = new LinkedList<String>();
@@ -188,7 +203,7 @@ public final class CompilerCaller {
         return false;
       int ret = 0;
       if (fd != null && !skip) {
-        final String out = genOutPath(base, pc, fv, fd.config.mcv, maven);
+        final String out = genOutPath(base, pc, fv, fd.config.mcv, maven, omit, version);
         final LinkedHashMap<Pattern, String> rep = processReplaces(pc, fv, fd.config.mcv);
         ret = Compiler.compile(fv, out, rep, fd, w1, w2);
       }
@@ -203,8 +218,8 @@ public final class CompilerCaller {
   public static void main(final String[] args) throws Exception {
     final List<String> skips = new ArrayList<String>();
     final List<String> debugs = new ArrayList<String>();
-    boolean skip = false, debug = false, maven = false;
-    String ecl = null;
+    boolean skip = false, debug = false, maven = false, omit = false;
+    String ecl = null, version = null;
     for (final String arg : args)
       if (arg.startsWith("-s")) {
         if (arg.length() > 2)
@@ -216,9 +231,13 @@ public final class CompilerCaller {
         debug = true;
       } else if (arg.startsWith("-e"))
         ecl = arg.substring(2);
+      else if (arg.startsWith("-v"))
+        version = arg.substring(2);
       else if (arg.equals("-m"))
         maven = true;
-      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null, maven)) {
+      else if (arg.equals("-o"))
+        omit = true;
+      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null, maven, omit, version)) {
         System.err.println("<<< Compile is failed!");
         System.exit(-1);
       }
