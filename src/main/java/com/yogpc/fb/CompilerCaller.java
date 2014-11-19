@@ -32,6 +32,31 @@ public final class CompilerCaller {
     return to;
   }
 
+  private static void addFileName(final StringBuilder sb, final ProjectConfig c,
+      final ProjectConfig.ForgeVersion v, final boolean omit, final String cv) {
+    if (!omit) {
+      sb.append(c.artifactId);
+      sb.append('-');
+    }
+    if (omit)
+      if (cv != null)
+        sb.append(cv);
+      else
+        sb.append(c.version);
+    if (v.name != null) {
+      if (omit)
+        sb.append('-');
+      sb.append(v.name);
+      if (!omit)
+        sb.append('-');
+    }
+    if (!omit)
+      if (cv != null)
+        sb.append(cv);
+      else
+        sb.append(c.version);
+  }
+
   private static String genOutPath(final File base, final ProjectConfig c,
       final ProjectConfig.ForgeVersion v, final String mcv, final boolean maven,
       final boolean omit, final String cv) {
@@ -42,27 +67,16 @@ public final class CompilerCaller {
       sb.append(File.separator);
       sb.append(c.artifactId);
       sb.append(File.separator);
-      if (cv != null) {
-        sb.append(cv);
-        sb.append('-');
-      } else if (v.name != null) {
+      if (v.name != null) {
         sb.append(v.name);
         sb.append('-');
       }
-      sb.append(c.version);
+      if (cv != null)
+        sb.append(cv);
+      else
+        sb.append(c.version);
       sb.append(File.separator);
-      if (!omit) {
-        sb.append(c.artifactId);
-        sb.append('-');
-      }
-      if (cv != null) {
-        sb.append(cv);
-        sb.append('-');
-      } else if (v.name != null) {
-        sb.append(v.name);
-        sb.append('-');
-      }
-      sb.append(c.version);
+      addFileName(sb, c, v, omit, cv);
       ret = new File(Constants.MINECRAFT_LIBRARIES, sb.toString());
     } else if (v.output != null)
       ret = new File(base, replace_vnum(v.output, c, v, mcv));
@@ -72,18 +86,7 @@ public final class CompilerCaller {
       final StringBuilder sb = new StringBuilder();
       sb.append("target");
       sb.append(File.separator);
-      if (!omit) {
-        sb.append(c.artifactId);
-        sb.append('-');
-      }
-      if (cv != null) {
-        sb.append(cv);
-        sb.append('-');
-      } else if (v.name != null) {
-        sb.append(v.name);
-        sb.append('-');
-      }
-      sb.append(c.version);
+      addFileName(sb, c, v, omit, cv);
       ret = new File(base, sb.toString());
     }
     return ret.getPath();
