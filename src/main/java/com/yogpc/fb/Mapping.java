@@ -199,13 +199,13 @@ public final class Mapping {
         if (n.endsWith("~"))
           continue;
         else if (matchMap(n, "packages"))
-          MappingBuilder.loadA(new String(d, Utils.ISO_8859_1), this.ss, false, true);
+          MappingBuilder.loadCsv(new String(d, Utils.ISO_8859_1), this.ss, false, true);
         else if (matchMap(n, "params"))
-          MappingBuilder.loadA(new String(d, Utils.ISO_8859_1), this.ss, false, false);
+          MappingBuilder.loadCsv(new String(d, Utils.ISO_8859_1), this.ss, false, false);
         else if (matchMap(n, "methods"))
-          MappingBuilder.loadA(new String(d, Utils.ISO_8859_1), this.ss, true, false);
+          MappingBuilder.loadCsv(new String(d, Utils.ISO_8859_1), this.ss, true, false);
         else if (matchMap(n, "fields"))
-          MappingBuilder.loadA(new String(d, Utils.ISO_8859_1), this.ss, true, false);
+          MappingBuilder.loadCsv(new String(d, Utils.ISO_8859_1), this.ss, true, false);
         else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.endsWith(".srg"))
           MappingBuilder.loadSrg(new String(d, Utils.ISO_8859_1), this.ss);
         else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.contains(".patch")
@@ -245,10 +245,9 @@ public final class Mapping {
     }
     in.close();
     is.close();
-    finalyze();
   }
 
-  private final void finalyze() throws IOException {
+  final void finalyze() throws IOException {
     this.gradle = this.local_fmlpy_buf == null;
     if (this.json == null && this.local_fmlpy_buf != null)
       generateJson();

@@ -191,6 +191,7 @@ public class FmlCleanup {
     this.last.put("Short", new Holder(0, true, "oshort"));
     this.last.put("Boolean", new Holder(0, true, "obool"));
     this.last.put("Package", new Holder(0, true, "opackage"));
+    this.last.put("Enum", new Holder(0, true, "oenum"));
 
     this.remap = new HashMap<String, String>();
     this.remap.put("long", "int");

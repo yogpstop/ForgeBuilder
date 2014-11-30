@@ -56,17 +56,12 @@ public final class Decompiler {
   }
 
   private static final String PAT_BASE = "http://files\\.minecraftforge\\.net/";
-  private static final String PAT_LEG = PAT_BASE + "minecraftforge/";
   private static final String PAT_MAV =
       PAT_BASE
           + "maven/net/minecraftforge/forge/([0-9\\._]+)-([0-9\\._]+)\\.([0-9]+)(?:-[^\\-]+)?/forge-([0-9\\._]+)-([0-9\\._]+)\\.([0-9]+)(?:-[^\\-]+)?-";
-  private static final Pattern[] FORGE_PATTERN =
-      {
-          Pattern
-              .compile(PAT_LEG
-                  + "(?:[^/]+/)?minecraftforge-src-([0-9\\._]+)-([0-9\\._]+)\\.([0-9]+)(?:-[^\\-\\.]+)?\\.zip"),
-          Pattern.compile(PAT_MAV + "src\\.zip"), Pattern.compile(PAT_MAV + "userdev\\.jar")};
-  private static final Pattern FORGE_INDEX = Pattern.compile(PAT_LEG + "([^\"]+)");
+  private static final Pattern[] FORGE_PATTERN = {Pattern.compile(PAT_MAV + "src\\.zip"),
+      Pattern.compile(PAT_MAV + "userdev\\.jar")};
+  private static final Pattern PAT_IDX = Pattern.compile(PAT_BASE + "minecraftforge//?([^\"]+)");
 
   static final boolean exec(final String version) throws Exception {
     if (list == null) {
@@ -79,13 +74,11 @@ public final class Decompiler {
         if (f == null)
           continue;
         final String data = Utils.fileToString(f, Utils.UTF_8);
-        final Matcher y = FORGE_INDEX.matcher(data);
+        final Matcher y = PAT_IDX.matcher(data);
         while (y.find()) {
-          if (!y.group().endsWith(".html")
-              && y.group().lastIndexOf('.') > y.group().lastIndexOf('/'))
+          if (y.group(1).endsWith(".css") || y.group(1).endsWith(".html"))
             continue;
-          l.add(new Downloader("forge_" + y.group(1).replaceFirst("index_(.*)\\.html", "$1"),
-              new URL(y.group()), "html"));
+          l.add(new Downloader("forge_" + y.group(1), new URL(y.group()), "html"));
         }
         for (final Pattern p : FORGE_PATTERN) {
           final Matcher z = p.matcher(data);
@@ -246,8 +239,11 @@ public final class Decompiler {
     dbg3.delete();
     System.out.println("<<< Start decompile");
     System.out.println("> Start downloads");
+    final MCPData md = new MCPData(this.url, this.forgev, this.mcv);
     final File[] files = download();
     this.m.load_forge_zip(files[0]);
+    md.patch(this.m.ss);
+    this.m.finalyze();
     System.out.println("> Start MCPMerge AccessTransformer MCInjector and SpecialSource");
     final MainTransformer trans = new MainTransformer(this.forgevi, null, this.m);
     final File tmp = File.createTempFile("ForgeBuilder", ".jar");

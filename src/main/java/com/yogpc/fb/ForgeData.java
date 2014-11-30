@@ -53,6 +53,9 @@ public class ForgeData {
   // For debug
   public static final void main(final String[] arg) throws Exception {
     // ForgeGradle 1.2
+    get("1245");// 1.8
+    get("1237");// 1.8
+    get("1240");// 1.7.10
     get("1236");// 1.7.10
     get("1208");// 1.7.10
     get("1150");// 1.7.10

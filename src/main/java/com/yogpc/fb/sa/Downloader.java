@@ -85,11 +85,15 @@ public class Downloader implements Runnable, IProcessor {
     sb.append(artifact).append("/").append(version);
     String cp = sb.toString();
     sb.append("/").append(artifact).append('-').append(version);
-    if (sub != null) {
+    if (sub == null || sub.equals("jar"))
+      sb.append(".jar");
+    else if (sub.equals("zip"))
+      sb.append(".zip");
+    else {
       sb.append('-').append(sub);
       cp = cp + "-" + sub;
+      sb.append(".jar");
     }
-    sb.append(".jar");
     File f = null;
     final File lp =
         new File(Constants.MINECRAFT_LIBRARIES, sb.toString().replace("/", File.separator));

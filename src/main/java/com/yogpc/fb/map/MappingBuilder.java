@@ -111,7 +111,7 @@ public class MappingBuilder {
     }
   }
 
-  public static final void loadA(final String csv, final JarMapping jm, final boolean hasJD,
+  public static final void loadCsv(final String csv, final JarMapping jm, final boolean hasJD,
       final boolean pack) {
     String[] l;
     for (final String rl : csv.split("(\r\n|\r|\n)")) {

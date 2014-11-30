@@ -21,7 +21,7 @@ public class FFPatcher {
       Pattern
           .compile("(?m)^(?<indent>[ \\t\\f\\v]*)"
               + MODIFIERS
-              + "(?<return>[^ ]+) (?<method>func_(?<number>\\d+)_[a-zA-Z_]+)\\((?<arguments>([^ ,]+ var\\d+,? ?)*)\\)"
+              + "(?<return>[^ ]+) (?<method>func_(?<number>\\d+)_[a-zA-Z_]+)\\((?<arguments>([^ ,]+ (\\.\\.\\. )?var\\d+,? ?)*)\\)"
               + THROWS + ";$");
   private static final Pattern TRAILING = Pattern.compile("(?m)[ \\t]+$");
   private static final Pattern VAIN_ZERO = Pattern.compile("([0-9]+\\.[0-9]*[1-9])0+([DdFfEe])");
@@ -98,15 +98,16 @@ public class FFPatcher {
     final String newIndent = indent + "   ";
     final Pattern enumEntry =
         Pattern
-            .compile(newIndent
+            .compile("^"
+                + newIndent
                 + "(?<name>[\\w$]+)\\(\"(?:[\\w$]+)\", [0-9]+(?:, (?<body>.*?))?\\)(?<end> *(?:;|,|\\{)$)");
     final Pattern constructor =
-        Pattern.compile(newIndent + MODIFIERS + simpleName + "\\((?<parameters>.*?)\\)(?<end>"
-            + THROWS + " *(?:\\{\\}| \\{))");
+        Pattern.compile("^" + newIndent + MODIFIERS + simpleName
+            + "\\((?<parameters>.*?)\\)(?<end>" + THROWS + " *(?:\\{\\}| \\{))");
     final Pattern constructorCall =
-        Pattern.compile(newIndent + "   (?<name>this|super)\\((?<body>.*?)\\)(?<end>;)");
+        Pattern.compile("^" + newIndent + "   (?<name>this|super)\\((?<body>.*?)\\)(?<end>;)");
     final Pattern valueField =
-        Pattern.compile(newIndent + "private static final " + qualifiedName
+        Pattern.compile("^" + newIndent + "private static final " + qualifiedName
             + "\\[\\] [$\\w\\d]+ = new " + qualifiedName + "\\[\\]\\{.*?\\};");
     String newLine;
     boolean prevSynthetic = false;
@@ -218,6 +219,10 @@ public class FFPatcher {
     final StringBuilder fixed = new StringBuilder();
     for (int x = 0; x < args.length; x++) {
       final String[] p = args[x].split(" ");
+      if (p.length == 3) {
+        p[0] = p[0] + " " + p[1];
+        p[1] = p[2];
+      }
       fixed.append(p[0]).append(" p_").append(number).append('_').append(p[1].substring(3))
           .append('_');
       if (x != args.length - 1)
