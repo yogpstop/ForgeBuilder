@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
@@ -24,12 +25,21 @@ import com.yogpc.fb.sa.ProjectConfig;
 import com.yogpc.fb.sa.Utils;
 
 public final class CompilerCaller {
+  private static final Pattern env = Pattern.compile("\\{ENV:(.+)\\}");
+
   private static String replace_vnum(final String from, final ProjectConfig c,
       final ProjectConfig.ForgeVersion v, final String mcv) {
     String to = from.replace("{version}", c.version);
     to = to.replace("{mcversion}", mcv);
     to = to.replace("{forgev}", v.forgev);
-    return to;
+    Matcher m = env.matcher(to);
+    StringBuffer sb = new StringBuffer();
+    while (m.find()) {
+      m.appendReplacement(sb, "");
+      sb.append(System.getenv(m.group(1)));
+    }
+    m.appendTail(sb);
+    return sb.toString();
   }
 
   private static void addFileName(final StringBuilder sb, final ProjectConfig c,

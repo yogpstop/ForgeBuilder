@@ -115,12 +115,11 @@ public final class Compiler {
   static int compile(final ForgeVersion fv, final String out,
       final LinkedHashMap<Pattern, String> map, final ForgeData fd, final MavenWrapper w1,
       final MavenWrapper w2) throws Exception {
-    final File src = new File(out + "-sources.jar");
+    final File src = new File(out.replace("{type}", "src") + "-sources.jar");
+    final File dev = new File(out.replace("{type}", "dev") + "-dev.jar");
     src.getParentFile().mkdirs();
     System.out.println("> Compile mod");
-    final int i =
-        exec_javac(fv.srces, map, MavenWrapper.getJar(w1, w2), fd, src, new File(out + "-dev.jar"),
-            fv.manifest);
+    final int i = exec_javac(fv.srces, map, MavenWrapper.getJar(w1, w2), fd, src, dev, fv.manifest);
     if (i != 0)
       return i;
     Collection<String> depCls = null;
@@ -130,7 +129,7 @@ public final class Compiler {
       for (final File f : MavenWrapper.getJar(w1))
         ma.addCP(f);
       ma.addCP(fd.jar);
-      depCls = ma.process(new File(out + "-dev.jar"));
+      depCls = ma.process(dev);
     }
     System.out.println("> Obfuscating");
     final int forgevi = Integer.parseInt(fv.forgev);
@@ -138,7 +137,7 @@ public final class Compiler {
     trans.addCP(fd.jar);
     for (final File f : MavenWrapper.getJar(w1))
       trans.addCP(f);
-    trans.process_jar(new File(out + "-dev.jar"), new File(out + ".jar"), depCls, fv.contains,
+    trans.process_jar(dev, new File(out.replace("{type}", "jar") + ".jar"), depCls, fv.contains,
         forgevi <= 534 ? JarMapping.RAW_OBF : JarMapping.RAW_SRG);
     return 0;
   }
