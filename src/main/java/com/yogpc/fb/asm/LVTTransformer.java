@@ -46,8 +46,8 @@ public class LVTTransformer {
     int i = params.size(), j = i;
     while (i < types.size()) {
       params.add("p_" + fid + "_" + Integer.toString(j) + "_");
-      final String _ = types.get(i++).getDescriptor();
-      j += _.equals("J") || _.equals("D") ? 2 : 1;
+      final String d = types.get(i++).getDescriptor();
+      j += d.equals("J") || d.equals("D") ? 2 : 1;
     }
   }
 

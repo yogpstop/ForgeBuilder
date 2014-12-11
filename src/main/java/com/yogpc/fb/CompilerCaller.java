@@ -32,8 +32,8 @@ public final class CompilerCaller {
     String to = from.replace("{version}", c.version);
     to = to.replace("{mcversion}", mcv);
     to = to.replace("{forgev}", v.forgev);
-    Matcher m = env.matcher(to);
-    StringBuffer sb = new StringBuffer();
+    final Matcher m = env.matcher(to);
+    final StringBuffer sb = new StringBuffer();
     while (m.find()) {
       m.appendReplacement(sb, "");
       sb.append(System.getenv(m.group(1)));
@@ -203,6 +203,8 @@ public final class CompilerCaller {
       final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
       if (ecl || !skip) {
         fd = ForgeData.get(fv.forgev);
+        if (fd == null)
+          return false;
         w1.addDownload(fv.depends, ecl, false, fv.forgev);
         w2.addDownload(fd.config.depends, ecl, false, fv.forgev);
         System.out.println("> Downloading dependencies");

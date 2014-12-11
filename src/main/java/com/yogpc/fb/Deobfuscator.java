@@ -93,6 +93,8 @@ public class Deobfuscator implements IProcessor {
     final Properties p = new Properties();
     if (!check(in, out, cfg, p)) {
       final ForgeData fd = ForgeData.get(this.fv);
+      if (fd == null)
+        return null;
       final MainTransformer mt = new MainTransformer(Integer.parseInt(this.fv), null, fd.srg);
       for (final String s : this.cp)
         mt.addCP(new File(s));

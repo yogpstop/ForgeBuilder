@@ -45,18 +45,19 @@ public class ForgeData {
     final File srg = new File(Constants.DATA_DIR, version + ".srg");
     if (jar.isFile() && config.isFile() && srg.isFile())
       versions.put(version, new ForgeData(config, srg, jar));
-    else if (!Decompiler.exec(version))
+    else if (!Decompiler.exec(version)) {
+      System.err.println("!!! Error found on decompile " + version);
       return null;
+    }
     return get(version);
   }
 
   // For debug
   public static final void main(final String[] arg) throws Exception {
     // ForgeGradle 1.2
-    get("1245");// 1.8
+    get("1262");// 1.8
     get("1237");// 1.8
-    get("1240");// 1.7.10
-    get("1236");// 1.7.10
+    get("1258");// 1.7.10
     get("1208");// 1.7.10
     get("1150");// 1.7.10
     get("1161");// 1.7.2

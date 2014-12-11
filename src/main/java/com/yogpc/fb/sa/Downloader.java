@@ -155,8 +155,16 @@ public class Downloader implements Runnable, IProcessor {
       else if (this.url != null)
         this.ret = tryDownload(this.url, this.name, this.ret, this.ext);
     } catch (final Exception e) {
+      System.err.println(toString() + " is failed with " + e.toString());
       this.ret = null;
     }
+  }
+
+  @Override
+  public String toString() {
+    return "Downloader{"
+        + (this.maven != null ? this.maven[0] + ":" + this.maven[1] + ":" + this.maven[2] + ":"
+            + this.maven[3] : this.url.toString()) + "}";
   }
 
   private IProcessor child;
