@@ -27,9 +27,9 @@ import com.yogpc.fb.sa.Utils;
 public final class CompilerCaller {
   private static final Pattern env = Pattern.compile("\\{ENV:([^\\{\\}]+)\\}");
 
-  private static String replace_vnum(final String from, final ProjectConfig c,
+  private static String replace_vnum(final String from, final String cv,
       final ProjectConfig.ForgeVersion v, final String mcv) {
-    String to = from.replace("{version}", c.version);
+    String to = from.replace("{version}", cv);
     to = to.replace("{mcversion}", mcv);
     to = to.replace("{forgev}", v.forgev);
     final Matcher m = env.matcher(to);
@@ -80,9 +80,9 @@ public final class CompilerCaller {
       addFileName(sb, c, v, omit, cv);
       ret = new File(Constants.MINECRAFT_LIBRARIES, sb.toString());
     } else if (v.output != null)
-      ret = new File(base, replace_vnum(v.output, c, v, mcv));
+      ret = new File(base, replace_vnum(v.output, cv, v, mcv));
     else if (c.output != null)
-      ret = new File(base, replace_vnum(c.output, c, v, mcv));
+      ret = new File(base, replace_vnum(c.output, cv, v, mcv));
     else {
       final StringBuilder sb = new StringBuilder();
       sb.append("target");
