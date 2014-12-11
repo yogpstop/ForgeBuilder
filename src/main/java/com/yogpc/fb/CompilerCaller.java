@@ -25,7 +25,7 @@ import com.yogpc.fb.sa.ProjectConfig;
 import com.yogpc.fb.sa.Utils;
 
 public final class CompilerCaller {
-  private static final Pattern env = Pattern.compile("\\{ENV:(.+)\\}");
+  private static final Pattern env = Pattern.compile("\\{ENV:([^\\{\\}]+)\\}");
 
   private static String replace_vnum(final String from, final ProjectConfig c,
       final ProjectConfig.ForgeVersion v, final String mcv) {
@@ -49,10 +49,7 @@ public final class CompilerCaller {
       sb.append('-');
     }
     if (omit)
-      if (cv != null)
-        sb.append(cv);
-      else
-        sb.append(c.version);
+      sb.append(cv);
     if (v.name != null) {
       if (omit)
         sb.append('-');
@@ -61,10 +58,7 @@ public final class CompilerCaller {
         sb.append('-');
     }
     if (!omit)
-      if (cv != null)
-        sb.append(cv);
-      else
-        sb.append(c.version);
+      sb.append(cv);
   }
 
   private static String genOutPath(final File base, final ProjectConfig c,
@@ -81,10 +75,7 @@ public final class CompilerCaller {
         sb.append(v.name);
         sb.append('-');
       }
-      if (cv != null)
-        sb.append(cv);
-      else
-        sb.append(c.version);
+      sb.append(cv);
       sb.append(File.separator);
       addFileName(sb, c, v, omit, cv);
       ret = new File(Constants.MINECRAFT_LIBRARIES, sb.toString());
@@ -168,7 +159,7 @@ public final class CompilerCaller {
   }
 
   private static boolean build(final String _base, final List<String> debugs, final String eclipse,
-      final List<String> skips, final boolean maven, final boolean omit, final String version)
+      final List<String> skips, final boolean mvn, final boolean omit, final String cv)
       throws Exception {
     System.out.print("<<< Start project ");
     System.out.println(_base);
@@ -217,11 +208,11 @@ public final class CompilerCaller {
       if (!loadAll(base, pc, fv, patches, has(debugs, fv) || ecl))
         return false;
       int ret = 0;
-      if (fd != null && !skip) {
-        final String out = genOutPath(base, pc, fv, fd.config.mcv, maven, omit, version);
-        final LinkedHashMap<Pattern, String> rep = processReplaces(pc, fv, fd.config.mcv);
-        ret = Compiler.compile(fv, out, rep, fd, w1, w2);
-      }
+      if (fd != null && !skip)
+        ret =
+            Compiler.compile(fv,
+                genOutPath(base, pc, fv, fd.config.mcv, mvn, omit, cv != null ? cv : pc.version),
+                processReplaces(pc, fv, fd.config.mcv), fd, w1, w2);
       compiled.add(fv.name == null ? fv.forgev : fv.name);
       if (ret != 0)
         return false;
