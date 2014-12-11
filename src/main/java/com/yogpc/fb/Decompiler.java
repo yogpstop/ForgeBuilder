@@ -110,8 +110,9 @@ public final class Decompiler {
     tmp.delete();
     tmp.mkdir();
     final File ffjar = File.createTempFile("ForgeBuilder", ".jar");
-    Utils.byteArrayToFile(Utils.urlToByteArray(Decompiler.class.getResource(!this.m.gradle ? "/f1"
-        : this.forgevi < 1048 ? "/f2" : "/f3")), ffjar);
+    Utils.byteArrayToFile(
+        Utils.urlToByteArray(Decompiler.class.getResource(this.forgevi < 1048 ? "/f4" : "/f3")),
+        ffjar);
     final List<String> l = new LinkedList<String>();
     l.add("java");
     l.add("-Xms2G");

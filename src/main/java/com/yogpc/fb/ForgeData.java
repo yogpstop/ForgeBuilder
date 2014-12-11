@@ -56,7 +56,7 @@ public class ForgeData {
   public static final void main(final String[] arg) throws Exception {
     // ForgeGradle 1.2
     get("1262");// 1.8
-    get("1237");// 1.8
+    get("1237");// 1.8 TODO ffpatch is broken?
     get("1258");// 1.7.10
     get("1208");// 1.7.10
     get("1150");// 1.7.10
