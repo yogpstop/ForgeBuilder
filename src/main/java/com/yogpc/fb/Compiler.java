@@ -118,6 +118,7 @@ public final class Compiler {
     final File src = new File(out.replace("{type}", "src") + "-sources.jar");
     final File dev = new File(out.replace("{type}", "dev") + "-dev.jar");
     src.getParentFile().mkdirs();
+    dev.getParentFile().mkdirs();
     System.out.println("> Compile mod");
     final int i = exec_javac(fv.srces, map, MavenWrapper.getJar(w1, w2), fd, src, dev, fv.manifest);
     if (i != 0)

@@ -179,6 +179,7 @@ public class MainTransformer {
   public void process_jar(final File in, final File out, final Collection<String> depCls,
       final Collection<String> mask, final int mode) throws Exception {
     final InputStream is = new FileInputStream(in);
+    out.getParentFile().mkdirs();
     final OutputStream os = new FileOutputStream(out);
     process_jar(is, os, depCls, mask, mode);
     os.close();
