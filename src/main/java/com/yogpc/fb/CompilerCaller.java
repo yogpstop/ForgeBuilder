@@ -33,6 +33,8 @@ public final class CompilerCaller {
     to = to.replace("{mcversion}", mcv);
     to = to.replace("{forgev}", v.forgev);
     to = to.replace("{vname}", v.name);
+    final String vnr = System.getenv(v.name);
+    to = to.replace("{vnamer}", vnr != null ? vnr : v.name);
     final Matcher m = env.matcher(to);
     final StringBuffer sb = new StringBuffer();
     while (m.find()) {
@@ -85,21 +87,15 @@ public final class CompilerCaller {
       final ProjectConfig.ForgeVersion v, final String mcv) {
     final LinkedHashMap<Pattern, String> ret = new LinkedHashMap<Pattern, String>();
     if (c.replace != null)
-      for (final Map.Entry<String, String> entry : c.replace.entrySet()) {
-        if (entry.getValue().equals("{version}"))
-          entry.setValue(c.version);
-        if (entry.getValue().equals("{mcversion}"))
-          entry.setValue(mcv);
-        if (entry.getValue().equals("{forgev}"))
-          entry.setValue(v.forgev);
-        if (entry.getValue().equals("{vname}"))
-          entry.setValue(v.name);
-        ret.put(Pattern.compile(Utils.reencode(entry.getKey())), Utils.reencode(entry.getValue()));
-      }
+      for (final Map.Entry<String, String> e : c.replace.entrySet())
+        ret.put(Pattern.compile(Utils.reencode(e.getKey())), Utils.reencode(e.getValue()));
     ret.put(Pattern.compile(Utils.reencode("\\{version\\}")), Utils.reencode(c.version));
     ret.put(Pattern.compile(Utils.reencode("\\{mcversion\\}")), Utils.reencode(mcv));
     ret.put(Pattern.compile(Utils.reencode("\\{forgev\\}")), Utils.reencode(v.forgev));
     ret.put(Pattern.compile(Utils.reencode("\\{vname\\}")), Utils.reencode(v.name));
+    final String vnr = System.getenv(v.name);
+    ret.put(Pattern.compile(Utils.reencode("\\{vnamer\\}")),
+        Utils.reencode(vnr != null ? vnr : v.name));
     return ret;
   }
 
