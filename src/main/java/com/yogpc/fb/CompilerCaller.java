@@ -32,6 +32,7 @@ public final class CompilerCaller {
     String to = from.replace("{version}", cv);
     to = to.replace("{mcversion}", mcv);
     to = to.replace("{forgev}", v.forgev);
+    to = to.replace("{vname}", v.name);
     final Matcher m = env.matcher(to);
     final StringBuffer sb = new StringBuffer();
     while (m.find()) {
@@ -43,27 +44,16 @@ public final class CompilerCaller {
   }
 
   private static void addFileName(final StringBuilder sb, final ProjectConfig c,
-      final ProjectConfig.ForgeVersion v, final boolean omit, final String cv) {
-    if (!omit) {
-      sb.append(c.artifactId);
-      sb.append('-');
-    }
-    if (omit)
-      sb.append(cv);
-    if (v.name != null) {
-      if (omit)
-        sb.append('-');
-      sb.append(v.name);
-      if (!omit)
-        sb.append('-');
-    }
-    if (!omit)
-      sb.append(cv);
+      final ProjectConfig.ForgeVersion v, final String cv) {
+    sb.append(File.separator);
+    sb.append(c.artifactId).append('-');
+    if (v.name != null)
+      sb.append(v.name).append('-');
+    sb.append(cv);
   }
 
   private static String genOutPath(final File base, final ProjectConfig c,
-      final ProjectConfig.ForgeVersion v, final String mcv, final boolean maven,
-      final boolean omit, final String cv) {
+      final ProjectConfig.ForgeVersion v, final String mcv, final boolean maven, final String cv) {
     File ret;
     if (maven) {
       final StringBuilder sb = new StringBuilder();
@@ -76,8 +66,7 @@ public final class CompilerCaller {
         sb.append('-');
       }
       sb.append(cv);
-      sb.append(File.separator);
-      addFileName(sb, c, v, omit, cv);
+      addFileName(sb, c, v, cv);
       ret = new File(Constants.MINECRAFT_LIBRARIES, sb.toString());
     } else if (v.output != null)
       ret = new File(base, replace_vnum(v.output, cv, v, mcv));
@@ -86,8 +75,7 @@ public final class CompilerCaller {
     else {
       final StringBuilder sb = new StringBuilder();
       sb.append("target");
-      sb.append(File.separator);
-      addFileName(sb, c, v, omit, cv);
+      addFileName(sb, c, v, cv);
       ret = new File(base, sb.toString());
     }
     return ret.getPath();
@@ -104,11 +92,14 @@ public final class CompilerCaller {
           entry.setValue(mcv);
         if (entry.getValue().equals("{forgev}"))
           entry.setValue(v.forgev);
+        if (entry.getValue().equals("{vname}"))
+          entry.setValue(v.name);
         ret.put(Pattern.compile(Utils.reencode(entry.getKey())), Utils.reencode(entry.getValue()));
       }
     ret.put(Pattern.compile(Utils.reencode("\\{version\\}")), Utils.reencode(c.version));
     ret.put(Pattern.compile(Utils.reencode("\\{mcversion\\}")), Utils.reencode(mcv));
     ret.put(Pattern.compile(Utils.reencode("\\{forgev\\}")), Utils.reencode(v.forgev));
+    ret.put(Pattern.compile(Utils.reencode("\\{vname\\}")), Utils.reencode(v.name));
     return ret;
   }
 
@@ -159,8 +150,7 @@ public final class CompilerCaller {
   }
 
   private static boolean build(final String _base, final List<String> debugs, final String eclipse,
-      final List<String> skips, final boolean mvn, final boolean omit, final String cv)
-      throws Exception {
+      final List<String> skips, final boolean mvn, final String cv) throws Exception {
     System.out.print("<<< Start project ");
     System.out.println(_base);
     final LinkedList<String> compiled = new LinkedList<String>();
@@ -211,7 +201,7 @@ public final class CompilerCaller {
       if (fd != null && !skip)
         ret =
             Compiler.compile(fv,
-                genOutPath(base, pc, fv, fd.config.mcv, mvn, omit, cv != null ? cv : pc.version),
+                genOutPath(base, pc, fv, fd.config.mcv, mvn, cv != null ? cv : pc.version),
                 processReplaces(pc, fv, fd.config.mcv), fd, w1, w2);
       compiled.add(fv.name == null ? fv.forgev : fv.name);
       if (ret != 0)
@@ -224,7 +214,7 @@ public final class CompilerCaller {
   public static void main(final String[] args) throws Exception {
     final List<String> skips = new ArrayList<String>();
     final List<String> debugs = new ArrayList<String>();
-    boolean skip = false, debug = false, maven = false, omit = false;
+    boolean skip = false, debug = false, maven = false;
     String ecl = null, version = null;
     for (final String arg : args)
       if (arg.startsWith("-s")) {
@@ -241,9 +231,7 @@ public final class CompilerCaller {
         version = arg.substring(2);
       else if (arg.equals("-m"))
         maven = true;
-      else if (arg.equals("-o"))
-        omit = true;
-      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null, maven, omit, version)) {
+      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null, maven, version)) {
         System.err.println("<<< Compile is failed!");
         System.exit(-1);
       }
