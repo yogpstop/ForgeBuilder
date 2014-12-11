@@ -7,6 +7,7 @@ import java.util.Map;
 public class ProjectConfig {
   public static class ForgeVersion {
     public String name;
+    public String rname;
     public String forgev;
     public String parent;
     public String src_base;

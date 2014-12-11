@@ -33,8 +33,7 @@ public final class CompilerCaller {
     to = to.replace("{mcversion}", mcv);
     to = to.replace("{forgev}", v.forgev);
     to = to.replace("{vname}", v.name);
-    final String vnr = System.getenv(v.name);
-    to = to.replace("{vnamer}", vnr != null ? vnr : v.name);
+    to = to.replace("{vnamer}", v.rname != null ? v.rname : v.name);
     final Matcher m = env.matcher(to);
     final StringBuffer sb = new StringBuffer();
     while (m.find()) {
@@ -93,9 +92,8 @@ public final class CompilerCaller {
     ret.put(Pattern.compile(Utils.reencode("\\{mcversion\\}")), Utils.reencode(mcv));
     ret.put(Pattern.compile(Utils.reencode("\\{forgev\\}")), Utils.reencode(v.forgev));
     ret.put(Pattern.compile(Utils.reencode("\\{vname\\}")), Utils.reencode(v.name));
-    final String vnr = System.getenv(v.name);
     ret.put(Pattern.compile(Utils.reencode("\\{vnamer\\}")),
-        Utils.reencode(vnr != null ? vnr : v.name));
+        Utils.reencode(v.rname != null ? v.rname : v.name));
     return ret;
   }
 
