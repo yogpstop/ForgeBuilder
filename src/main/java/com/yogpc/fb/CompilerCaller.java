@@ -32,8 +32,10 @@ public final class CompilerCaller {
     String to = from.replace("{version}", cv);
     to = to.replace("{mcversion}", mcv);
     to = to.replace("{forgev}", v.forgev);
-    to = to.replace("{vname}", v.name);
-    to = to.replace("{vnamer}", v.rname != null ? v.rname : v.name);
+    if (v.name != null)
+      to = to.replace("{vname}", v.name);
+    if (v.rname != null || v.name != null)
+      to = to.replace("{vnamer}", v.rname != null ? v.rname : v.name);
     final Matcher m = env.matcher(to);
     final StringBuffer sb = new StringBuffer();
     while (m.find()) {
@@ -91,9 +93,11 @@ public final class CompilerCaller {
     ret.put(Pattern.compile(Utils.reencode("\\{version\\}")), Utils.reencode(c.version));
     ret.put(Pattern.compile(Utils.reencode("\\{mcversion\\}")), Utils.reencode(mcv));
     ret.put(Pattern.compile(Utils.reencode("\\{forgev\\}")), Utils.reencode(v.forgev));
-    ret.put(Pattern.compile(Utils.reencode("\\{vname\\}")), Utils.reencode(v.name));
-    ret.put(Pattern.compile(Utils.reencode("\\{vnamer\\}")),
-        Utils.reencode(v.rname != null ? v.rname : v.name));
+    if (v.name != null)
+      ret.put(Pattern.compile(Utils.reencode("\\{vname\\}")), Utils.reencode(v.name));
+    if (v.rname != null || v.name != null)
+      ret.put(Pattern.compile(Utils.reencode("\\{vnamer\\}")),
+          Utils.reencode(v.rname != null ? v.rname : v.name));
     return ret;
   }
 
@@ -117,7 +121,7 @@ public final class CompilerCaller {
       throws IOException {
     if (fv.parent != null)
       for (final ProjectConfig.ForgeVersion p : pc.forge)
-        if (p.name.equals(fv.parent)) {
+        if (fv.parent.equals(p.name)) {
           fv.srces.putAll(p.srces);
           return Patcher.applyPatch(patches, fv, debug, new File(base, "src"));
         }
