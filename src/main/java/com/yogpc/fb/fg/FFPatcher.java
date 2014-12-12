@@ -9,9 +9,10 @@ import java.util.regex.Pattern;
 import com.yogpc.fb.sa.Utils;
 
 public class FFPatcher {
+  private static final String B = "[\\w$\\.]+";// COPY OF FmlCleanup.B
   static final String MODIFIERS =
-      "((?:(?:public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp)\\s+)*)";
-  static final String THROWS = "(?:\\s+throws\\s+([\\w$\\.]+(?:\\s*,\\s*[\\w$\\.]+)*))?";
+      "((?:(?:public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp) )*)";
+  static final String THROWS = "(?: throws (" + B + "(?:, " + B + ")*))?";
   // 1:indent 2:modifier 3:return 4:name 5:parameters 6:throw 7:name2 8:arg2
   private static final Pattern SYNTHETICS = Pattern
       .compile("(?m)(?:\\s*// \\$FF: (?:synthetic|bridge) method\\n){1,2}" + FmlCleanup.METHOD_REG
@@ -46,7 +47,7 @@ public class FFPatcher {
       m = ABSTRACT.matcher(text);
       while (m.find()) {
         m.appendReplacement(out, "");
-        out.append(abstract_replacement(m));
+        abstract_replacement(m, out);
       }
       m.appendTail(out);
       text = out.toString();
@@ -211,28 +212,38 @@ public class FFPatcher {
     return match.group();
   }
 
-  private static String abstract_replacement(final Matcher match) {
-    final String orig = match.group(5);
+  private static void abstract_replacement(final Matcher match, final StringBuffer sb) {
+    final int from = match.start(5) - match.start();
+    final int to = match.end(5) - match.start();
     String number = match.group(4);
-    if (!number.startsWith("func_") || orig == null || orig.length() == 0)
-      return match.group();
+    final String g0 = match.group();
+    if (!number.startsWith("func_") || from < 0 || from >= to) {
+      sb.append(g0);
+      return;
+    }
     number = number.substring(5);
     final int i = number.indexOf('_');
     if (i > 0)
       number = number.substring(0, i);
-    final String[] args = orig.split(", ");
-    final StringBuilder fixed = new StringBuilder();
+    sb.append(g0.substring(0, from));
+    final String[] args = Utils.split(g0.substring(from, to), ',');
     for (int x = 0; x < args.length; x++) {
-      final String[] p = args[x].split(" ");
-      if (p.length == 3) {
-        p[0] = p[0] + " " + p[1];
-        p[1] = p[2];
+      final String[] p = Utils.split(args[x].trim(), ' ');
+      sb.append(p[0]);
+      if (p.length > 1) {
+        sb.append(' ');
+        if (p.length > 2) {
+          sb.append(p[1]).append(' ');
+          p[1] = p[2];
+        }
+        if (p[1].startsWith("var"))
+          sb.append("p_").append(number).append('_').append(p[1].substring(3)).append('_');
+        else
+          sb.append(p[1]);
       }
-      fixed.append(p[0]).append(" p_").append(number).append('_').append(p[1].substring(3))
-          .append('_');
-      if (x != args.length - 1)
-        fixed.append(", ");
+      if (x < args.length - 1)
+        sb.append(", ");
     }
-    return match.group().replace(orig, fixed.toString());
+    sb.append(g0.substring(to));
   }
 }

@@ -15,15 +15,19 @@ import com.yogpc.fb.sa.Utils;
 
 public class FmlCleanup {
   // 1:indent 2:modifier 3:return 4:name 5:parameters 6:throw
-  public static final Pattern METHOD_REG = Pattern.compile("^([ \\t\\f\\v]*)" + FFPatcher.MODIFIERS
-      + "([\\w$\\.\\[\\]]+(?<!return|throw))\\s+([\\w$]+)\\s*\\((.*?)\\)" + FFPatcher.THROWS);
-  private static final Pattern CATCH_REG = Pattern.compile("catch \\((.*)\\)$");
-  private static final Pattern METHOD_DEC_END = Pattern.compile("(}|\\);|throws .+?;)$");
-  private static final Pattern CAPS_START = Pattern.compile("^[A-Z]");
-  private static final Pattern ARRAY = Pattern.compile("(\\[|\\.\\.\\.)");
-  private static final Pattern VAR_CALL = Pattern
-      .compile("(?i)[a-z_][a-z0-9_\\[\\]]+ var\\d+(?:x)*");
-  static final Pattern VAR = Pattern.compile("var\\d+(?:x)*");
+  private static final String A = "[\\w$\\.\\[\\]]+";
+  private static final String AD = "[\\w$\\[\\]]+";// ...
+  private static final String B = "[\\w$\\.]+";// COPY OF FFPatcher.B
+  private static final String C = "[\\w$]+";
+  private static final String F = "(?:final )?";
+  private static final String I = "[ \\t\\f\\v]*";
+  static final Pattern V = Pattern.compile("var\\d+(?:x)*");
+  private static final Pattern VCALL = Pattern.compile("(" + AD + ") (" + V + ")");
+  public static final Pattern METHOD_REG = Pattern.compile("^(" + I + ")" + FFPatcher.MODIFIERS
+      + "(" + A + ") (" + C + ")\\(((?:" + F + A + " " + C + "(?:, " + F + A + " " + C + ")*)?)\\)"
+      + FFPatcher.THROWS);
+  private static final Pattern CATCH_REG = Pattern.compile("catch \\(" + F + "(" + B + ") (" + C
+      + ")\\)");
 
   static final ComparatorImpl COMPARATOR = new ComparatorImpl();
 
@@ -54,27 +58,20 @@ public class FmlCleanup {
 
     for (final String line : lines) {
       Matcher matcher = METHOD_REG.matcher(line);
-      final boolean found = matcher.find();
       if ((forgevi < 967 ? !line.contains("=") : !line.endsWith(";") && !line.endsWith(","))
-          && found) {
+          && matcher.find()) {
         method = new MethodInfo(method, matcher.group(1));
         method.lines.add(line);
 
-        boolean invalid = false;
         final String args = matcher.group(5);
-        if (args != null)
-          for (final String str : Utils.csplit(args, ',')) {
-            if (str.indexOf(' ') == -1) {
-              invalid = true;
-              break;
-            }
-            method.addVar(str);
+        if (args != null && args.length() > 0)
+          for (final String str : Utils.split(args, ',')) {
+            final String[] split = Utils.split(str.trim(), ' ');
+            method.vars.put(split[split.length - 1], split[split.length - 2]);
           }
 
-        if (invalid || METHOD_DEC_END.matcher(line).find()) {
-          if (method.parent != null)
-            method.parent.children.remove(method);
-          else
+        if (line.endsWith(";") || line.endsWith("}")) {
+          if (method.parent == null)
             for (final String l : Utils.split(method.rename(null, forgevi), '\n'))
               output.add(l);
           method = method.parent;
@@ -91,14 +88,12 @@ public class FmlCleanup {
         method.lines.add(line);
         matcher = CATCH_REG.matcher(line);
         if (matcher.find())
-          method.addVar(matcher.group(1));
+          method.vars.put(matcher.group(2), matcher.group(1));
         else {
-          matcher = VAR_CALL.matcher(line);
-          while (matcher.find()) {
-            final String match = matcher.group();
-            if (!match.startsWith("return") && !match.startsWith("throw"))
-              method.addVar(match);
-          }
+          matcher = VCALL.matcher(line);
+          while (matcher.find())
+            if (!matcher.group(1).equals("return") && !matcher.group(1).equals("throw"))
+              method.vars.put(matcher.group(2), matcher.group(1));
         }
       } else
         output.add(line);
@@ -110,44 +105,33 @@ public class FmlCleanup {
   private static class MethodInfo {
     MethodInfo parent = null;
     List<Object> lines = new ArrayList<Object>();
-    private final List<String> vars = new ArrayList<String>();
-    List<MethodInfo> children = new ArrayList<MethodInfo>();
+    final Map<String, String> vars = new LinkedHashMap<String, String>();
     final String ENDING;
 
     MethodInfo(final MethodInfo parent, final String indent) {
       this.parent = parent;
       this.ENDING = indent + "}";
-      if (parent != null) {
-        parent.children.add(this);
+      if (parent != null)
         parent.lines.add(this);
-      }
-    }
-
-    void addVar(final String info) {
-      this.vars.add(info);
     }
 
     String rename(final FmlCleanup _namer, final int forgevi) {
       final FmlCleanup namer = _namer == null ? new FmlCleanup() : new FmlCleanup(_namer);
-
       final Map<String, String> renames = new HashMap<String, String>();
       final Map<String, String> unnamed = new LinkedHashMap<String, String>();
 
-      for (final String var : this.vars) {
-        final String[] split = var.split(" ");
-
-        if (!split[1].startsWith("var"))
-          renames.put(split[1], namer.getName(split[0]));
+      for (final Map.Entry<String, String> e : this.vars.entrySet())
+        if (V.matcher(e.getKey()).matches())
+          unnamed.put(e.getKey(), e.getValue());
         else
-          unnamed.put(split[1], split[0]);
-      }
+          namer.getName(e.getValue());
 
       if (unnamed.size() > 0) {
         final List<String> sorted = new ArrayList<String>(unnamed.keySet());
         if (forgevi >= 967)
           Collections.sort(sorted, COMPARATOR.setinv(false));
-        for (final String s : sorted)
-          renames.put(s, namer.getName(unnamed.get(s)));
+        for (final String key : sorted)
+          renames.put(key, namer.getName(unnamed.get(key)));
       }
 
       final StringBuilder buf = new StringBuilder();
@@ -156,15 +140,13 @@ public class FmlCleanup {
           buf.append(((MethodInfo) line).rename(namer, forgevi)).append("\n");
         else
           buf.append((String) line).append("\n");
-
       String body = buf.toString();
 
       if (renames.size() > 0) {
         final List<String> sortedKeys = new ArrayList<String>(renames.keySet());
         Collections.sort(sortedKeys, COMPARATOR.setinv(true));
         for (final String key : sortedKeys)
-          if (VAR.matcher(key).matches())
-            body = body.replace(key, renames.get(key));
+          body = body.replace(key, renames.get(key));
       }
 
       return body.substring(0, body.length() - "\n".length());
@@ -208,47 +190,31 @@ public class FmlCleanup {
   }
 
   String getName(final String _type) {
-    String type = _type;
-    String index = null;
-    String findtype = type;
-    while (findtype.contains("[][]"))
-      findtype = findtype.replaceAll("\\[\\]\\[\\]", "[]");
-    if (this.last.containsKey(findtype))
-      index = findtype;
-    else if (this.last.containsKey(findtype.toLowerCase()))
-      index = findtype.toLowerCase();
+    int i;
+    String key = null;
+    String type = _type.replace("...", "[]");
+    type = type.replace(".", "");
+    while ((i = type.indexOf("[][]")) > -1)
+      type = type.substring(0, i) + type.substring(i + 2);
+    if (this.last.containsKey(type))
+      key = type;
+    else if (this.last.containsKey(type.toLowerCase()))
+      key = type.toLowerCase();
     else if (this.remap.containsKey(type))
-      index = this.remap.get(type);
-    if ((index == null || index.length() == 0)
-        && (CAPS_START.matcher(type).find() || ARRAY.matcher(type).find())) {
-      type = type.replace("...", "[]");
-      while (type.contains("[][]"))
-        type = type.replaceAll("\\[\\]\\[\\]", "[]");
-      String name = type.toLowerCase();
-      name = name.replace(".", "");
-      if (Pattern.compile("\\[").matcher(type).find()) {
-        name = "a" + name;
-        name = name.replace("[]", "").replace("...", "");
-      }
-      this.last.put(type.toLowerCase(), new Holder(0, true, name));
-      index = type.toLowerCase();
-    }
-    if (index == null || index.length() == 0)
+      key = this.remap.get(type);
+    else if (Character.isUpperCase(type.charAt(0)) || type.indexOf("[]") > -1)
+      this.last.put(key = type.toLowerCase(), new Holder(0, true, key.indexOf("[]") > -1 ? "a"
+          + key.replace("[]", "") : key));
+    else
       return type.toLowerCase();
-    final Holder holder = this.last.get(index);
-    final int id = holder.id;
+    final Holder holder = this.last.get(key);
+    final int id = holder.id++;
     final List<String> names = holder.names;
-    final int ammount = names.size();
-    String name;
-    if (ammount == 1)
-      name = names.get(0) + (id == 0 && holder.skip_zero ? "" : Integer.toString(id));
-    else {
-      final int num = id / ammount;
-      name =
-          names.get(id % ammount) + (id < ammount && holder.skip_zero ? "" : Integer.toString(num));
-    }
-    holder.id++;
-    return name;
+    final int amount = names.size();
+    if (amount == 1)
+      return names.get(0) + (id == 0 && holder.skip_zero ? "" : Integer.toString(id));
+    return names.get(id % amount)
+        + (id < amount && holder.skip_zero ? "" : Integer.toString(id / amount));
   }
 
   private class Holder {

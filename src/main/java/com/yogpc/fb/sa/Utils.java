@@ -164,17 +164,6 @@ public final class Utils {
     return ret;
   }
 
-  public static final List<String> csplit(final String s, final char de) {
-    final String[] r = split(s, de);
-    final List<String> e = new ArrayList<String>(r.length);
-    for (String i : r) {
-      i = i.trim();
-      if (i.length() > 0)
-        e.add(i);
-    }
-    return e;
-  }
-
   public static final String join(final String[] a, final char de) {
     final StringBuilder sb = new StringBuilder();
     for (final String s : a)
