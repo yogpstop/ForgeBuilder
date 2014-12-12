@@ -16,7 +16,7 @@ import com.yogpc.fb.sa.Utils;
 public class FmlCleanup {
   // 1:indent 2:modifier 3:return 4:name 5:parameters 6:throw
   public static final Pattern METHOD_REG = Pattern.compile("^([ \\t\\f\\v]*)" + FFPatcher.MODIFIERS
-      + "([\\w$\\.\\[\\]]+)\\s+([\\w$]+)\\((.*?)\\)" + FFPatcher.THROWS);
+      + "([\\w$\\.\\[\\]]+(?<!return|throw))\\s+([\\w$]+)\\s*\\((.*?)\\)" + FFPatcher.THROWS);
   private static final Pattern CATCH_REG = Pattern.compile("catch \\((.*)\\)$");
   private static final Pattern METHOD_DEC_END = Pattern.compile("(}|\\);|throws .+?;)$");
   private static final Pattern CAPS_START = Pattern.compile("^[A-Z]");

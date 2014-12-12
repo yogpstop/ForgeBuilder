@@ -23,16 +23,20 @@ public class FFPatcher {
   private static final Pattern EMPTY_SUPER = Pattern.compile("(?m)^[ \t]+super\\(\\);\\n");
 
   public static String processFile(final String _text, final int forgevi, final String mcv) {
-    StringBuffer out = new StringBuffer();
-    Matcher m = SYNTHETICS.matcher(_text.replaceAll("(\\r\\n|\\r)", "\n"));
-    if (forgevi > 534)
+    String text = _text.replaceAll("(\\r\\n|\\r)", "\n");
+    StringBuffer out;
+    Matcher m;
+    if (forgevi > 534) {
+      out = new StringBuffer();
+      m = SYNTHETICS.matcher(text);
       while (m.find()) {
         m.appendReplacement(out, "");
         out.append(synthetic_replacement(m));
       }
-    m.appendTail(out);
-    String text =
-        VAIN_ZERO.matcher(TRAILING.matcher(out.toString()).replaceAll("")).replaceAll("$1$2");
+      m.appendTail(out);
+      text = out.toString();
+    }
+    text = VAIN_ZERO.matcher(TRAILING.matcher(text).replaceAll("")).replaceAll("$1$2");
     final List<String> lines = new ArrayList<String>(Arrays.asList(Utils.split(text, '\n')));
     processClass(lines, "", 0, "", forgevi);
     text = Utils.join(lines.toArray(new String[lines.size()]), '\n');
