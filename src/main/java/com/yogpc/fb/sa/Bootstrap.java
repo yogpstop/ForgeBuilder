@@ -9,7 +9,6 @@ import java.util.Arrays;
 public class Bootstrap {
   private static final String DEFAULT_CLASS = "com.yogpc.fb.CompilerCaller";
 
-  @SuppressWarnings("resource")
   public static void main(final String[] args) throws Exception {
     System.out.println("> Downloading ForgeBuilder dependencies.");
     final URLClassLoader cl = (URLClassLoader) Bootstrap.class.getClassLoader();

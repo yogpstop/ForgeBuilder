@@ -1,0 +1,78 @@
+language: java
+jdk:
+    - openjdk6
+    - openjdk7
+    - oraclejdk7
+    - oraclejdk8
+install:
+    - mvn package -Dmaven.test.skip=true
+script:
+    - java -jar target/*.jar com.yogpc.fb.ForgeData ${FORGE_VERSION}
+env:
+    global:
+        - REL_TYPE='travis'
+    matrix:
+        # ForgeGradle 1.2 1.8
+        - FORGE_VERSION='1265'
+        - FORGE_VERSION='1237'
+        #                 1.7.10
+        - FORGE_VERSION='1264'
+        - FORGE_VERSION='1208'
+        - FORGE_VERSION='1150'
+        #                 1.7.2
+        - FORGE_VERSION='1161'
+        - FORGE_VERSION='1147'
+        - FORGE_VERSION='1048'
+        # ForgeGradle 1.1
+        - FORGE_VERSION='1047'
+        - FORGE_VERSION='967'
+        # ForgeGradle 1.0 1.6.4
+        - FORGE_VERSION='960'
+        # Mod Coder Pack
+        - FORGE_VERSION='965'
+        #                 1.6.2
+        - FORGE_VERSION='871'
+        #                 1.5.2
+        - FORGE_VERSION='738'
+        #                 1.4.7
+        - FORGE_VERSION='534'
+        #                 1.4.5
+        - FORGE_VERSION='443'
+        #                 1.4.2
+        - FORGE_VERSION='355'
+        #                 1.3.2
+        - FORGE_VERSION='318'
+        - FORGE_VERSION='188'
+        #                 1.3.1
+        - FORGE_VERSION='187'
+        - FORGE_VERSION='183'
+matrix:
+    exclude:
+        - env: FORGE_VERSION='1047'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='967'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='960'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='965'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='871'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='738'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='534'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='443'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='355'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='318'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='188'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='187'
+          jdk: oraclejdk8
+        - env: FORGE_VERSION='183'
+          jdk: oraclejdk8
+    allow_failures:
+        - env: FORGE_VERSION='1237'

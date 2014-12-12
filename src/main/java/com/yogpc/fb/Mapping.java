@@ -159,8 +159,8 @@ public final class Mapping {
         if (!skipJD) {
           // Method javadoc
           m = FmlCleanup.METHOD_REG.matcher(line);
-          if (m.find() && !m.group("return").equals("return") && !m.group("return").equals("throw"))
-            buildJavadoc(m.group("indent"), m.group("name"), true, dest, forgevi, false);
+          if (m.find() && !m.group(3).equals("return") && !m.group(3).equals("throw"))
+            buildJavadoc(m.group(1), m.group(4), true, dest, forgevi, false);
           // Field javadoc
           m = FIELD_REG.matcher(line);
           if (m.find())

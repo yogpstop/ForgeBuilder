@@ -14,9 +14,9 @@ import java.util.regex.Pattern;
 import com.yogpc.fb.sa.Utils;
 
 public class FmlCleanup {
-  public static final Pattern METHOD_REG = Pattern.compile("^(?<indent>\\s+)" + FFPatcher.MODIFIERS
-      + "(?<return>[\\w\\[\\]\\.$]+) +(?<name>[\\w$]+)\\((?<parameters>.*?)\\)(?<end>"
-      + FFPatcher.THROWS + ")");
+  // 1:indent 2:modifier 3:return 4:name 5:parameters 6:throw
+  public static final Pattern METHOD_REG = Pattern.compile("^([ \\t\\f\\v]*)" + FFPatcher.MODIFIERS
+      + "([\\w$\\.\\[\\]]+)\\s+([\\w$]+)\\((.*?)\\)" + FFPatcher.THROWS);
   private static final Pattern CATCH_REG = Pattern.compile("catch \\((.*)\\)$");
   private static final Pattern METHOD_DEC_END = Pattern.compile("(}|\\);|throws .+?;)$");
   private static final Pattern CAPS_START = Pattern.compile("^[A-Z]");
@@ -57,11 +57,11 @@ public class FmlCleanup {
       final boolean found = matcher.find();
       if ((forgevi < 967 ? !line.contains("=") : !line.endsWith(";") && !line.endsWith(","))
           && found) {
-        method = new MethodInfo(method, matcher.group("indent"));
+        method = new MethodInfo(method, matcher.group(1));
         method.lines.add(line);
 
         boolean invalid = false;
-        final String args = matcher.group("parameters");
+        final String args = matcher.group(5);
         if (args != null)
           for (final String str : Utils.csplit(args, ',')) {
             if (str.indexOf(' ') == -1) {

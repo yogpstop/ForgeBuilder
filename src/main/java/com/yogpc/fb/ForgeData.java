@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -53,29 +54,42 @@ public class ForgeData {
   }
 
   // For debug
+  private static final String[] DEFAULTS = {
+      // ForgeGradle 1.2
+      "1262",// 1.8
+      "1237",// 1.8 TODO ffpatch is broken?
+      "1258",// 1.7.10
+      "1208",// 1.7.10
+      "1150",// 1.7.10
+      "1161",// 1.7.2
+      "1147",// 1.7.2
+      "1048",// 1.7.2
+      // ForgeGradle 1.1
+      "1047",// 1.7.2
+      "967",// 1.7.2
+      // ForgeGradle 1.0
+      "960",// 1.6.4
+      // Mod Coder Pack
+      "965",// 1.6.4
+      "738",// 1.5.2
+      "534",// 1.4.7
+      "443",// 1.4.5
+      "355",// 1.4.2
+      "318",// 1.3.2
+      "188",// 1.3.2
+      "183"// 1.3.1
+  };
+
   public static final void main(final String[] arg) throws Exception {
-    // ForgeGradle 1.2
-    get("1262");// 1.8
-    get("1237");// 1.8 TODO ffpatch is broken?
-    get("1258");// 1.7.10
-    get("1208");// 1.7.10
-    get("1150");// 1.7.10
-    get("1161");// 1.7.2
-    get("1147");// 1.7.2
-    get("1048");// 1.7.2
-    // ForgeGradle 1.1
-    get("1047");// 1.7.2
-    get("967");// 1.7.2
-    // ForgeGradle 1.0
-    get("960");// 1.6.4
-    // Mod Coder Pack
-    get("965");// 1.6.4
-    get("738");// 1.5.2
-    get("534");// 1.4.7
-    get("443");// 1.4.5
-    get("355");// 1.4.2
-    get("318");// 1.3.2
-    get("188");// 1.3.2
-    get("183");// 1.3.1
+    final String[] todo = arg.length > 0 ? arg : DEFAULTS;
+    final List<String> failed = new ArrayList<String>(todo.length);
+    for (final String a : todo)
+      if (get(a) == null)
+        failed.add(a);
+    if (failed.size() > 0) {
+      System.err.println("!!!!! These decompile were failed !!!!!");
+      System.err.println(failed.toString());
+      System.exit(22);
+    }
   }
 }

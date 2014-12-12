@@ -10,19 +10,13 @@ import com.yogpc.fb.sa.Utils;
 
 public class FFPatcher {
   static final String MODIFIERS =
-      "(?<modifiers>(?:(?:public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp) +)*)";
-  static final String THROWS = "(?: throws (?<throws>[\\w$.]+(?:, [\\w$.]+)*))?";
-  private static final Pattern SYNTHETICS =
-      Pattern
-          .compile("(?m)(\\s*// \\$FF: (synthetic|bridge) method\\n){1,2}\\s*"
-              + MODIFIERS
-              + "(?<return>.+?) (?<method>.+?)\\((?<arguments>.*)\\)\\s*\\{\\n\\s*return this\\.(?<method2>.+?)\\((?<arguments2>.*)\\);\\n\\s*\\}");
-  private static final Pattern ABSTRACT =
-      Pattern
-          .compile("(?m)^(?<indent>[ \\t\\f\\v]*)"
-              + MODIFIERS
-              + "(?<return>[^ ]+) (?<method>func_(?<number>\\d+)_[a-zA-Z_]+)\\((?<arguments>([^ ,]+ (\\.\\.\\. )?var\\d+,? ?)*)\\)"
-              + THROWS + ";$");
+      "((?:(?:public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp)\\s+)*)";
+  static final String THROWS = "(?:\\s+throws\\s+([\\w$\\.]+(?:\\s*,\\s*[\\w$\\.]+)*))?";
+  // 1:indent 2:modifier 3:return 4:name 5:parameters 6:throw 7:name2 8:arg2
+  private static final Pattern SYNTHETICS = Pattern
+      .compile("(?m)(?:\\s*// \\$FF: (?:synthetic|bridge) method\\n){1,2}" + FmlCleanup.METHOD_REG
+          + "\\s*\\{\\s*return\\s+this\\.(.+?)\\((.*)\\);\\s*\\}");
+  private static final Pattern ABSTRACT = Pattern.compile("(?m)" + FmlCleanup.METHOD_REG + ";$");
   private static final Pattern TRAILING = Pattern.compile("(?m)[ \\t]+$");
   private static final Pattern VAIN_ZERO = Pattern.compile("([0-9]+\\.[0-9]*[1-9])0+([DdFfEe])");
   private static final Pattern NEWLINES = Pattern.compile("(?m)^\\n{2,}");
@@ -58,11 +52,12 @@ public class FFPatcher {
 
   private static int processClass(final List<String> lines, final String indent,
       final int startIndex, final String qualifiedName, final int forgevi) {
+    // 1:modifier 2:type 3:name
     final Pattern classPattern =
         Pattern
             .compile(indent
                 + MODIFIERS
-                + "(?<type>enum|class|interface) (?<name>[\\w$]+)(?: (extends|implements) (?:[\\w$.]+(?:, [\\w$.]+)*))* \\{");
+                + "(enum|class|interface)\\s+([\\w$]+)(?:\\s+(?:extends|implements)\\s+[\\w$\\.]+(?:\\s*,\\s*[\\w$\\.]+)*)*\\s*\\{");
 
     for (int i = startIndex; i < lines.size(); i++) {
       final String line = lines.get(i);
@@ -76,14 +71,14 @@ public class FFPatcher {
         String newIndent;
         String classPath;
         if (qualifiedName == null || qualifiedName.length() == 0) {
-          classPath = matcher.group("name");
+          classPath = matcher.group(3);
           newIndent = indent;
         } else {
-          classPath = qualifiedName + "." + matcher.group("name");
+          classPath = qualifiedName + "." + matcher.group(3);
           newIndent = indent + "   ";
         }
-        if (matcher.group("type").equals("enum"))
-          processEnum(lines, newIndent, i + 1, classPath, matcher.group("name"), forgevi);
+        if (matcher.group(2).equals("enum"))
+          processEnum(lines, newIndent, i + 1, classPath, matcher.group(3), forgevi);
         i = processClass(lines, newIndent, i + 1, classPath, forgevi);
       }
       if (line.startsWith(indent + "}"))
@@ -96,16 +91,19 @@ public class FFPatcher {
   private static void processEnum(final List<String> lines, final String indent,
       final int startIndex, final String qualifiedName, final String simpleName, final int forgevi) {
     final String newIndent = indent + "   ";
+    // 1:name 2:body 3:end
     final Pattern enumEntry =
         Pattern
             .compile("^"
                 + newIndent
-                + "(?<name>[\\w$]+)\\(\"(?:[\\w$]+)\", [0-9]+(?:, (?<body>.*?))?\\)(?<end> *(?:;|,|\\{)$)");
+                + "([\\w$]+)\\s*\\(\\s*\"(?:[\\w$]+)\"\\s*,\\s*[0-9]+(?:\\s*,\\s*(.*?))?\\)(\\s*(?:;|,|\\{)$)");
+    // 1:modifier 2:paramaters 3:end 4:throw
     final Pattern constructor =
-        Pattern.compile("^" + newIndent + MODIFIERS + simpleName
-            + "\\((?<parameters>.*?)\\)(?<end>" + THROWS + " *(?:\\{\\}| \\{))");
+        Pattern.compile("^" + newIndent + MODIFIERS + simpleName + "\\((.*?)\\)(" + THROWS
+            + " *(?:\\{\\}| \\{))");
+    // 1:name 2:body
     final Pattern constructorCall =
-        Pattern.compile("^" + newIndent + "   (?<name>this|super)\\((?<body>.*?)\\)(?<end>;)");
+        Pattern.compile("^" + newIndent + "   (this|super)\\s*\\(\\s*(.*?)\\s*\\)\\s*;");
     final Pattern valueField =
         Pattern.compile("^" + newIndent + "private static final " + qualifiedName
             + "\\[\\] [$\\w\\d]+ = new " + qualifiedName + "\\[\\]\\{.*?\\};");
@@ -117,9 +115,9 @@ public class FFPatcher {
       final String line = lines.get(i);
       Matcher matcher = enumEntry.matcher(line);
       if (matcher.find()) {
-        String body = matcher.group("body");
+        String body = matcher.group(2);
 
-        newLine = newIndent + matcher.group("name");
+        newLine = newIndent + matcher.group(1);
 
         if (body != null && body.length() != 0) {
           String[] args = body.split(", ");
@@ -131,21 +129,21 @@ public class FFPatcher {
         }
 
         if (body == null || body.length() == 0)
-          newLine += matcher.group("end");
+          newLine += matcher.group(3);
         else
-          newLine += "(" + body + ")" + matcher.group("end");
+          newLine += "(" + body + ")" + matcher.group(3);
       }
       matcher = constructor.matcher(line);
       if (matcher.find()) {
         final StringBuilder tmp = new StringBuilder();
-        tmp.append(newIndent).append(matcher.group("modifiers")).append(simpleName).append("(");
+        tmp.append(newIndent).append(matcher.group(1)).append(simpleName).append("(");
 
-        final String[] args = matcher.group("parameters").split(", ");
+        final String[] args = matcher.group(2).split(", ");
         for (int x = 2; x < args.length; x++)
           tmp.append(args[x]).append(x < args.length - 1 ? ", " : "");
         tmp.append(")");
 
-        tmp.append(matcher.group("end"));
+        tmp.append(matcher.group(3));
         newLine = tmp.toString();
 
         if (args.length <= 2 && newLine.endsWith("}"))
@@ -154,7 +152,7 @@ public class FFPatcher {
       if (forgevi >= 967) {
         matcher = constructorCall.matcher(line);
         if (matcher.find()) {
-          String body = matcher.group("body");
+          String body = matcher.group(2);
 
           if (body != null && body.length() != 0) {
             String[] args = body.split(", ");
@@ -162,8 +160,7 @@ public class FFPatcher {
             body = Utils.join(args, ", ");
           }
 
-          newLine =
-              newIndent + "   " + matcher.group("name") + "(" + body + ")" + matcher.group("end");
+          newLine = newIndent + "   " + matcher.group(1) + "(" + body + ");";
         }
       }
 
@@ -187,14 +184,14 @@ public class FFPatcher {
   }
 
   private static String synthetic_replacement(final Matcher match) {
-    if (!match.group("method").equals(match.group("method2")))
+    if (!match.group(4).equals(match.group(7)))
       return match.group();
-    String arg1 = match.group("arguments");
-    final String arg2 = match.group("arguments2");
+    String arg1 = match.group(5);
+    final String arg2 = match.group(8);
     if (arg1.equals(arg2) && arg1.equals(""))
       return "";
 
-    final String[] args = match.group("arguments").split(", ");
+    final String[] args = match.group(5).split(", ");
     for (int x = 0; x < args.length; x++)
       args[x] = args[x].split(" ")[1];
 
@@ -211,10 +208,14 @@ public class FFPatcher {
   }
 
   private static String abstract_replacement(final Matcher match) {
-    final String orig = match.group("arguments");
-    final String number = match.group("number");
-    if (orig == null || orig.length() == 0)
+    final String orig = match.group(5);
+    String number = match.group(4);
+    if (!number.startsWith("func_") || orig == null || orig.length() == 0)
       return match.group();
+    number = number.substring(5);
+    final int i = number.indexOf('_');
+    if (i > 0)
+      number = number.substring(0, i);
     final String[] args = orig.split(", ");
     final StringBuilder fixed = new StringBuilder();
     for (int x = 0; x < args.length; x++) {
