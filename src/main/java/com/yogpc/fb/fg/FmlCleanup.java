@@ -23,9 +23,10 @@ public class FmlCleanup {
   private static final String I = "[ \\t\\f\\v]*";
   static final Pattern V = Pattern.compile("var\\d+(?:x)*");
   private static final Pattern VCALL = Pattern.compile("(" + AD + ") (" + V + ")");
-  static final String PARAMS = "\\(((?:" + F + A + " " + C + "(?:, " + F + A + " " + C + ")*)?)\\)";
+  static final String PARAMS = "\\(((?:" + F + A + "(?: \\.\\.\\.)? " + C + "(?:, " + F + A
+      + "(?: \\.\\.\\.)? " + C + ")*)?)\\)";
   public static final Pattern METHOD_REG = Pattern.compile("^(" + I + ")" + FFPatcher.MODIFIERS
-      + "(" + A + ") (" + C + ")" + PARAMS + FFPatcher.THROWS);
+      + "(?:(" + A + ") )?(" + C + ")" + PARAMS + FFPatcher.THROWS);
   private static final Pattern CATCH_REG = Pattern.compile("catch \\(" + F + "(" + B + ") (" + C
       + ")\\)");
 
@@ -67,8 +68,9 @@ public class FmlCleanup {
         final String args = matcher.group(5);
         if (args != null && args.length() > 0)
           for (final String str : args.split(", ")) {
-            final String[] split = Utils.split(str, ' ');
-            method.vars.put(split[split.length - 1], split[split.length - 2]);
+            final int p = str.lastIndexOf(' ');
+            method.vars.put(str.substring(p + 1),
+                str.substring(str.startsWith("final ") ? 6 : 0, p));
           }
 
         if (line.endsWith(";") || line.endsWith("}")) {
@@ -197,9 +199,27 @@ public class FmlCleanup {
     int i;
     String key = null;
     String type = _type.replace("...", "[]");
-    type = type.replace(".", "");
-    while ((i = type.indexOf("[][]")) > -1)
-      type = type.substring(0, i) + type.substring(i + 2);
+    final StringBuilder sb = new StringBuilder(type.length());
+    int p = 0;
+    for (i = 0; i < type.length(); i++) {
+      final char c = type.charAt(i);
+      if (c == '.' || c == ' ')
+        continue;
+      if (c == '[' && p == 0)
+        p++;
+      else if (c == ']' && p == 1)
+        p++;
+      else if (c == '[' && p == 2) {
+        p++;
+        continue;
+      } else if (c == ']' && p == 3) {
+        p--;
+        continue;
+      } else
+        p = 0;
+      sb.append(c);
+    }
+    type = sb.toString();
     if (this.last.containsKey(type))
       key = type;
     else if (this.last.containsKey(type.toLowerCase()))

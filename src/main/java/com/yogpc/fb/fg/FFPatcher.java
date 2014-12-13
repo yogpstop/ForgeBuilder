@@ -172,7 +172,7 @@ public class FFPatcher {
       return "";
     final String[] args = arg1.split(", ");
     for (int x = 0; x < args.length; x++)
-      args[x] = Utils.split(args[x], ' ')[1];
+      args[x] = args[x].substring(args[x].lastIndexOf(' ') + 1);
     final StringBuilder sb = new StringBuilder();
     sb.append(args[0]);
     for (int x = 1; x < args.length; x++)
@@ -199,17 +199,13 @@ public class FFPatcher {
     sb.append(g0.substring(0, from));
     final String[] args = g0.substring(from, to).split(", ");
     for (int x = 0; x < args.length; x++) {
-      final String[] p = Utils.split(args[x], ' ');
-      sb.append(p[0]);
-      sb.append(' ');
-      if (p.length > 2) {
-        sb.append(p[1]).append(' ');
-        p[1] = p[2];
-      }
-      if (p[1].startsWith("var"))
-        sb.append("p_").append(number).append('_').append(p[1].substring(3)).append('_');
+      final int p = args[x].lastIndexOf(' ') + 1;
+      final String v = args[x].substring(p);
+      sb.append(args[x].substring(0, p));
+      if (v.startsWith("var"))
+        sb.append("p_").append(number).append('_').append(v.substring(3)).append('_');
       else
-        sb.append(p[1]);
+        sb.append(v);
       if (x < args.length - 1)
         sb.append(", ");
     }
