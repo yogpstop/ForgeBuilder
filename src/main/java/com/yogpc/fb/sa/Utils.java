@@ -171,13 +171,6 @@ public final class Utils {
     return sb.substring(0, sb.length() - 1);
   }
 
-  public static final String join(final String[] a, final String de) {
-    final StringBuilder sb = new StringBuilder();
-    for (final String s : a)
-      sb.append(s).append(de);
-    return sb.substring(0, sb.length() - de.length());
-  }
-
   private static final char[] base64 = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
       'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd',
       'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',

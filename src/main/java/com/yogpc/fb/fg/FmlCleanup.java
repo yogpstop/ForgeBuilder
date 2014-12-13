@@ -15,17 +15,17 @@ import com.yogpc.fb.sa.Utils;
 
 public class FmlCleanup {
   // 1:indent 2:modifier 3:return 4:name 5:parameters 6:throw
-  private static final String A = "[\\w$\\.\\[\\]]+";
+  static final String A = "[\\w$\\.\\[\\]]+";
   private static final String AD = "[\\w$\\[\\]]+";// ...
-  private static final String B = "[\\w$\\.]+";// COPY OF FFPatcher.B
-  private static final String C = "[\\w$]+";
+  static final String B = "[\\w$\\.]+";
+  static final String C = "[\\w$]+";
   private static final String F = "(?:final )?";
   private static final String I = "[ \\t\\f\\v]*";
   static final Pattern V = Pattern.compile("var\\d+(?:x)*");
   private static final Pattern VCALL = Pattern.compile("(" + AD + ") (" + V + ")");
+  static final String PARAMS = "\\(((?:" + F + A + " " + C + "(?:, " + F + A + " " + C + ")*)?)\\)";
   public static final Pattern METHOD_REG = Pattern.compile("^(" + I + ")" + FFPatcher.MODIFIERS
-      + "(" + A + ") (" + C + ")\\(((?:" + F + A + " " + C + "(?:, " + F + A + " " + C + ")*)?)\\)"
-      + FFPatcher.THROWS);
+      + "(" + A + ") (" + C + ")" + PARAMS + FFPatcher.THROWS);
   private static final Pattern CATCH_REG = Pattern.compile("catch \\(" + F + "(" + B + ") (" + C
       + ")\\)");
 
@@ -58,15 +58,16 @@ public class FmlCleanup {
 
     for (final String line : lines) {
       Matcher matcher = METHOD_REG.matcher(line);
-      if ((forgevi < 967 ? !line.contains("=") : !line.endsWith(";") && !line.endsWith(","))
-          && matcher.find()) {
+      if (matcher.find()
+          && (forgevi < 967 ? !line.contains("=") : line.charAt(line.length() - 1) != ';'
+              && line.charAt(line.length() - 1) != ',')) {
         method = new MethodInfo(method, matcher.group(1));
         method.lines.add(line);
 
         final String args = matcher.group(5);
         if (args != null && args.length() > 0)
-          for (final String str : Utils.split(args, ',')) {
-            final String[] split = Utils.split(str.trim(), ' ');
+          for (final String str : args.split(", ")) {
+            final String[] split = Utils.split(str, ' ');
             method.vars.put(split[split.length - 1], split[split.length - 2]);
           }
 
@@ -98,8 +99,11 @@ public class FmlCleanup {
       } else
         output.add(line);
     }
-    final String ret = Utils.join(output.toArray(new String[output.size()]), '\n');
-    return new StringBuilder().append(ret).append('\n').toString();
+    final StringBuilder sb = new StringBuilder();
+    for (final String out : output)
+      sb.append(out).append('\n');
+    // Cut last LF => error
+    return sb.toString();
   }
 
   private static class MethodInfo {
@@ -137,9 +141,9 @@ public class FmlCleanup {
       final StringBuilder buf = new StringBuilder();
       for (final Object line : this.lines)
         if (line instanceof MethodInfo)
-          buf.append(((MethodInfo) line).rename(namer, forgevi)).append("\n");
+          buf.append(((MethodInfo) line).rename(namer, forgevi)).append('\n');
         else
-          buf.append((String) line).append("\n");
+          buf.append((String) line).append('\n');
       String body = buf.toString();
 
       if (renames.size() > 0) {
@@ -149,7 +153,7 @@ public class FmlCleanup {
           body = body.replace(key, renames.get(key));
       }
 
-      return body.substring(0, body.length() - "\n".length());
+      return body.substring(0, body.length() - 1);
     }
   }
 

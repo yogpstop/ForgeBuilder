@@ -9,14 +9,15 @@ import java.util.regex.Pattern;
 import com.yogpc.fb.sa.Utils;
 
 public class FFPatcher {
-  private static final String B = "[\\w$\\.]+";// COPY OF FmlCleanup.B
+  private static final String B = FmlCleanup.B;
+  private static final String C = FmlCleanup.C;
   static final String MODIFIERS =
       "((?:(?:public|protected|private|static|abstract|final|native|synchronized|transient|volatile|strictfp) )*)";
   static final String THROWS = "(?: throws (" + B + "(?:, " + B + ")*))?";
   // 1:indent 2:modifier 3:return 4:name 5:parameters 6:throw 7:name2 8:arg2
   private static final Pattern SYNTHETICS = Pattern
       .compile("(?m)(?:\\s*// \\$FF: (?:synthetic|bridge) method\\n){1,2}" + FmlCleanup.METHOD_REG
-          + "\\s*\\{\\s*return\\s+this\\.(.+?)\\((.*)\\);\\s*\\}");
+          + "\\s*\\{\\s*return this\\.(.+?)\\((.*)\\);\\s*\\}");
   private static final Pattern ABSTRACT = Pattern.compile("(?m)" + FmlCleanup.METHOD_REG + ";$");
   private static final Pattern TRAILING = Pattern.compile("(?m)[ \\t]+$");
   private static final Pattern VAIN_ZERO = Pattern.compile("([0-9]+\\.[0-9]*[1-9])0+([DdFfEe])");
@@ -59,11 +60,8 @@ public class FFPatcher {
       final int startIndex, final String qualifiedName, final int forgevi) {
     // 1:modifier 2:type 3:name
     final Pattern classPattern =
-        Pattern
-            .compile(indent
-                + MODIFIERS
-                + "(enum|class|interface)\\s+([\\w$]+)(?:\\s+(?:extends|implements)\\s+[\\w$\\.]+(?:\\s*,\\s*[\\w$\\.]+)*)*\\s*\\{");
-
+        Pattern.compile(indent + MODIFIERS + "(enum|class|interface) (" + C
+            + ")(?: (?:extends|implements) " + B + "(?:, " + B + ")*){0,2} \\{");
     for (int i = startIndex; i < lines.size(); i++) {
       final String line = lines.get(i);
       if (line == null || line.length() == 0)
@@ -93,97 +91,73 @@ public class FFPatcher {
     return 0;
   }
 
-  private static void processEnum(final List<String> lines, final String indent,
-      final int startIndex, final String qualifiedName, final String simpleName, final int forgevi) {
-    final String newIndent = indent + "   ";
+  private static void processEnum(final List<String> lines, final String idt1,
+      final int startIndex, final String name, final String simpleName, final int forgevi) {
+    final String idt2 = idt1 + "   ";
     // 1:name 2:body 3:end
     final Pattern enumEntry =
-        Pattern
-            .compile("^"
-                + newIndent
-                + "([\\w$]+)\\s*\\(\\s*\"(?:[\\w$]+)\"\\s*,\\s*[0-9]+(?:\\s*,\\s*(.*?))?\\)(\\s*(?:;|,|\\{)$)");
+        Pattern.compile(idt2 + "(" + C + ")\\(\"" + C + "\", [0-9]+((?:, .+?)*)\\)(;|,| \\{)");
     // 1:modifier 2:paramaters 3:end 4:throw
     final Pattern constructor =
-        Pattern.compile("^" + newIndent + MODIFIERS + simpleName + "\\((.*?)\\)(" + THROWS
-            + " *(?:\\{\\}| \\{))");
+        Pattern.compile("^" + idt2 + MODIFIERS + simpleName + FmlCleanup.PARAMS + "(" + THROWS
+            + " (?:\\{\\}|\\{))");
     // 1:name 2:body
-    final Pattern constructorCall =
-        Pattern.compile("^" + newIndent + "   (this|super)\\s*\\(\\s*(.*?)\\s*\\)\\s*;");
+    final Pattern constructorCall = Pattern.compile("^" + idt2 + "   (this|super)\\((.*?)\\);");
     final Pattern valueField =
-        Pattern.compile("^" + newIndent + "private static final " + qualifiedName
-            + "\\[\\] [$\\w\\d]+ = new " + qualifiedName + "\\[\\]\\{.*?\\};");
-    String newLine;
+        Pattern.compile("^" + idt2 + "private static final " + name + "\\[\\] " + C + " = new "
+            + name + "\\[\\]\\{.*?\\};");
     boolean prevSynthetic = false;
-
     for (int i = startIndex; i < lines.size(); i++) {
-      newLine = null;
       final String line = lines.get(i);
       Matcher matcher = enumEntry.matcher(line);
-      if (matcher.find()) {
-        String body = matcher.group(2);
-
-        newLine = newIndent + matcher.group(1);
-
-        if (body != null && body.length() != 0) {
-          String[] args = body.split(", ");
-
-          if (line.endsWith("{"))
-            if (args[args.length - 1].equals("null"))
-              args = Arrays.copyOf(args, args.length - 1);
-          body = Utils.join(args, ", ");
+      if (matcher.matches()) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(idt2).append(matcher.group(1));
+        final String[] args = Utils.split(matcher.group(2), ',');
+        int lastidx = args.length - 1;
+        if (line.endsWith("{") && args[lastidx].equals(" null"))
+          lastidx--;
+        if (lastidx > 0) {
+          sb.append('(');
+          args[1] = args[1].substring(1);
+          for (int x = 1; x <= lastidx; x++)
+            sb.append(args[x]).append(x < lastidx ? "," : "");
+          sb.append(')');
         }
-
-        if (body == null || body.length() == 0)
-          newLine += matcher.group(3);
-        else
-          newLine += "(" + body + ")" + matcher.group(3);
+        lines.set(i, sb.append(matcher.group(3)).toString());
       }
       matcher = constructor.matcher(line);
       if (matcher.find()) {
-        final StringBuilder tmp = new StringBuilder();
-        tmp.append(newIndent).append(matcher.group(1)).append(simpleName).append("(");
-
-        final String[] args = matcher.group(2).split(", ");
+        final StringBuilder sb = new StringBuilder();
+        sb.append(idt2).append(matcher.group(1)).append(simpleName).append('(');
+        final String[] args = Utils.split(matcher.group(2), ',');
         for (int x = 2; x < args.length; x++)
-          tmp.append(args[x]).append(x < args.length - 1 ? ", " : "");
-        tmp.append(")");
-
-        tmp.append(matcher.group(3));
-        newLine = tmp.toString();
-
-        if (args.length <= 2 && newLine.endsWith("}"))
-          newLine = "";
+          sb.append(args[x]).append(x < args.length - 1 ? "," : "");
+        lines.set(i, sb.append(')').append(matcher.group(3)).toString());
       }
       if (forgevi >= 967) {
         matcher = constructorCall.matcher(line);
         if (matcher.find()) {
-          String body = matcher.group(2);
-
-          if (body != null && body.length() != 0) {
-            String[] args = body.split(", ");
-            args = Arrays.copyOfRange(args, 2, args.length);
-            body = Utils.join(args, ", ");
-          }
-
-          newLine = newIndent + "   " + matcher.group(1) + "(" + body + ");";
+          final StringBuilder sb = new StringBuilder();
+          sb.append(idt2).append("   ").append(matcher.group(1)).append('(');
+          final String[] args = Utils.split(matcher.group(2), ',');
+          for (int x = 2; x < args.length; x++)
+            sb.append(args[x]).append(x < args.length - 1 ? "," : "");
+          lines.set(i, sb.append(");").toString());
         }
       }
-
       if (prevSynthetic) {
         matcher = valueField.matcher(line);
         if (matcher.find())
-          newLine = "";
+          lines.set(i, "");
       }
-
       if (line.contains("// $FF: synthetic field")) {
-        newLine = "";
+        lines.set(i, "");
         prevSynthetic = true;
       } else
         prevSynthetic = false;
-
-      if (newLine != null)
-        lines.set(i, newLine);
-      if (line.startsWith(indent + "}"))
+      if (line.length() > idt1.length() && line.startsWith(idt1)
+          && line.charAt(idt1.length()) == '}')
         break;
     }
   }
@@ -193,22 +167,18 @@ public class FFPatcher {
       return match.group();
     String arg1 = match.group(5);
     final String arg2 = match.group(8);
-    if (arg1.equals(arg2) && arg1.equals(""))
+    if (arg1.equals("") && arg2.equals(""))
       return "";
-
-    final String[] args = match.group(5).split(", ");
+    final String[] args = arg1.split(", ");
     for (int x = 0; x < args.length; x++)
-      args[x] = args[x].split(" ")[1];
-
-    final StringBuilder b = new StringBuilder();
-    b.append(args[0]);
+      args[x] = Utils.split(args[x], ' ')[1];
+    final StringBuilder sb = new StringBuilder();
+    sb.append(args[0]);
     for (int x = 1; x < args.length; x++)
-      b.append(", ").append(args[x]);
-    arg1 = b.toString();
-
+      sb.append(", ").append(args[x]);
+    arg1 = sb.toString();
     if (arg1.equals(arg2))
       return "";
-
     return match.group();
   }
 
@@ -217,7 +187,7 @@ public class FFPatcher {
     final int to = match.end(5) - match.start();
     String number = match.group(4);
     final String g0 = match.group();
-    if (!number.startsWith("func_") || from < 0 || from >= to) {
+    if (!number.startsWith("func_") || from == to) {
       sb.append(g0);
       return;
     }
@@ -226,21 +196,19 @@ public class FFPatcher {
     if (i > 0)
       number = number.substring(0, i);
     sb.append(g0.substring(0, from));
-    final String[] args = Utils.split(g0.substring(from, to), ',');
+    final String[] args = g0.substring(from, to).split(", ");
     for (int x = 0; x < args.length; x++) {
-      final String[] p = Utils.split(args[x].trim(), ' ');
+      final String[] p = Utils.split(args[x], ' ');
       sb.append(p[0]);
-      if (p.length > 1) {
-        sb.append(' ');
-        if (p.length > 2) {
-          sb.append(p[1]).append(' ');
-          p[1] = p[2];
-        }
-        if (p[1].startsWith("var"))
-          sb.append("p_").append(number).append('_').append(p[1].substring(3)).append('_');
-        else
-          sb.append(p[1]);
+      sb.append(' ');
+      if (p.length > 2) {
+        sb.append(p[1]).append(' ');
+        p[1] = p[2];
       }
+      if (p[1].startsWith("var"))
+        sb.append("p_").append(number).append('_').append(p[1].substring(3)).append('_');
+      else
+        sb.append(p[1]);
       if (x < args.length - 1)
         sb.append(", ");
     }
