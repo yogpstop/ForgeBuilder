@@ -40,7 +40,7 @@ public class FFPatcher {
     }
     text = VAIN_ZERO.matcher(TRAILING.matcher(text).replaceAll("")).replaceAll("$1$2");
     final List<String> lines = new ArrayList<String>(Arrays.asList(Utils.split(text, '\n')));
-    processClass(lines, "", 0, null, forgevi);
+    processClass(lines, null, 0, null, forgevi);
     text = Utils.join(lines.toArray(new String[lines.size()]), '\n');
     text = EMPTY_SUPER.matcher(NEWLINES.matcher(text).replaceAll("\n")).replaceAll("");
     if (forgevi >= 1048 && !mcv.equals("1.7.2")) {
