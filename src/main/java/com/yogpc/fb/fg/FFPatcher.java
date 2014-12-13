@@ -70,7 +70,7 @@ public class FFPatcher {
         continue;
 
       final Matcher matcher = classPattern.matcher(line);
-      if (matcher.find()) {
+      if (matcher.matches()) {
         String newIndent;
         String classPath;
         if (qualifiedName == null || qualifiedName.length() == 0) {
@@ -99,13 +99,13 @@ public class FFPatcher {
         Pattern.compile(idt2 + "(" + C + ")\\(\"" + C + "\", [0-9]+((?:, .+?)*)\\)(;|,| \\{)");
     // 1:modifier 2:paramaters 3:end 4:throw
     final Pattern constructor =
-        Pattern.compile("^" + idt2 + MODIFIERS + simpleName + FmlCleanup.PARAMS + "(" + THROWS
+        Pattern.compile(idt2 + MODIFIERS + simpleName + FmlCleanup.PARAMS + "(" + THROWS
             + " (?:\\{\\}|\\{))");
     // 1:name 2:body
-    final Pattern constructorCall = Pattern.compile("^" + idt2 + "   (this|super)\\((.*?)\\);");
+    final Pattern constructorCall = Pattern.compile(idt2 + "   (this|super)\\((.*?)\\);");
     final Pattern valueField =
-        Pattern.compile("^" + idt2 + "private static final " + name + "\\[\\] " + C + " = new "
-            + name + "\\[\\]\\{.*?\\};");
+        Pattern.compile(idt2 + "private static final " + name + "\\[\\] " + C + " = new " + name
+            + "\\[\\]\\{.*?\\};");
     boolean prevSynthetic = false;
     for (int i = startIndex; i < lines.size(); i++) {
       final String line = lines.get(i);
@@ -127,7 +127,7 @@ public class FFPatcher {
         lines.set(i, sb.append(matcher.group(3)).toString());
       }
       matcher = constructor.matcher(line);
-      if (matcher.find()) {
+      if (matcher.matches()) {
         final StringBuilder sb = new StringBuilder();
         sb.append(idt2).append(matcher.group(1)).append(simpleName).append('(');
         final String[] args = Utils.split(matcher.group(2), ',');
@@ -137,7 +137,7 @@ public class FFPatcher {
       }
       if (forgevi >= 967) {
         matcher = constructorCall.matcher(line);
-        if (matcher.find()) {
+        if (matcher.matches()) {
           final StringBuilder sb = new StringBuilder();
           sb.append(idt2).append("   ").append(matcher.group(1)).append('(');
           final String[] args = Utils.split(matcher.group(2), ',');
@@ -148,7 +148,7 @@ public class FFPatcher {
       }
       if (prevSynthetic) {
         matcher = valueField.matcher(line);
-        if (matcher.find())
+        if (matcher.matches())
           lines.set(i, "");
       }
       if (line.contains("// $FF: synthetic field")) {
