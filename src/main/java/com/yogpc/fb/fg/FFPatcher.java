@@ -40,7 +40,7 @@ public class FFPatcher {
     }
     text = VAIN_ZERO.matcher(TRAILING.matcher(text).replaceAll("")).replaceAll("$1$2");
     final List<String> lines = new ArrayList<String>(Arrays.asList(Utils.split(text, '\n')));
-    processClass(lines, "", 0, "", forgevi);
+    processClass(lines, "", 0, null, forgevi);
     text = Utils.join(lines.toArray(new String[lines.size()]), '\n');
     text = EMPTY_SUPER.matcher(NEWLINES.matcher(text).replaceAll("\n")).replaceAll("");
     if (forgevi >= 1048 && !mcv.equals("1.7.2")) {
@@ -56,13 +56,14 @@ public class FFPatcher {
     return text;
   }
 
-  private static int processClass(final List<String> lines, final String indent,
-      final int startIndex, final String qualifiedName, final int forgevi) {
+  private static int processClass(final List<String> lines, final String idt1, final int start,
+      final String qualifiedName, final int forgevi) {
+    final String idt2 = idt1 == null ? "" : idt1 + "   ";
     // 1:modifier 2:type 3:name
     final Pattern classPattern =
-        Pattern.compile(indent + MODIFIERS + "(enum|class|interface) (" + C
-            + ")(?: (?:extends|implements) " + B + "(?:, " + B + ")*){0,2} \\{");
-    for (int i = startIndex; i < lines.size(); i++) {
+        Pattern.compile(idt2 + MODIFIERS + "(enum|class|interface) (" + C
+            + ")(?: (?:extend|implement)s " + B + "(?:, " + B + ")*){0,2} \\{");
+    for (int i = start; i < lines.size(); i++) {
       final String line = lines.get(i);
       if (line == null || line.length() == 0)
         continue;
@@ -71,28 +72,22 @@ public class FFPatcher {
 
       final Matcher matcher = classPattern.matcher(line);
       if (matcher.matches()) {
-        String newIndent;
-        String classPath;
-        if (qualifiedName == null || qualifiedName.length() == 0) {
-          classPath = matcher.group(3);
-          newIndent = indent;
-        } else {
-          classPath = qualifiedName + "." + matcher.group(3);
-          newIndent = indent + "   ";
-        }
+        final String classPath =
+            (qualifiedName == null ? "" : qualifiedName + ".") + matcher.group(3);
         if (matcher.group(2).equals("enum"))
-          processEnum(lines, newIndent, i + 1, classPath, matcher.group(3), forgevi);
-        i = processClass(lines, newIndent, i + 1, classPath, forgevi);
+          processEnum(lines, idt2, i + 1, classPath, matcher.group(3), forgevi);
+        i = processClass(lines, idt2, i + 1, classPath, forgevi);
       }
-      if (line.startsWith(indent + "}"))
+      if (idt1 != null && line.length() > idt1.length() && line.startsWith(idt1)
+          && line.charAt(idt1.length()) == '}')
         return i;
     }
 
     return 0;
   }
 
-  private static void processEnum(final List<String> lines, final String idt1,
-      final int startIndex, final String name, final String simpleName, final int forgevi) {
+  private static void processEnum(final List<String> lines, final String idt1, final int start,
+      final String name, final String simpleName, final int forgevi) {
     final String idt2 = idt1 + "   ";
     // 1:name 2:body 3:end
     final Pattern enumEntry =
@@ -107,7 +102,7 @@ public class FFPatcher {
         Pattern.compile(idt2 + "private static final " + name + "\\[\\] " + C + " = new " + name
             + "\\[\\]\\{.*?\\};");
     boolean prevSynthetic = false;
-    for (int i = startIndex; i < lines.size(); i++) {
+    for (int i = start; i < lines.size(); i++) {
       final String line = lines.get(i);
       Matcher matcher = enumEntry.matcher(line);
       if (matcher.matches()) {

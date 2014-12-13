@@ -3,6 +3,8 @@ package com.yogpc.fb.sa;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -251,20 +253,57 @@ public final class UnifiedDiff {
     }
   }
 
+  private final boolean _patch(final Map<String, String> target, final boolean dry,
+      final Map<String, String> rejs) {
+    boolean failed = false;
+    for (final PFile f : this.files)
+      failed |= !f.patch(target, dry, rejs);
+    return failed;
+  }
+
   public final boolean patch(final Map<String, String> target, final boolean dry, final File in,
       final File out, final File rej, final boolean force) throws IOException {
     final Map<String, String> bak = new HashMap<String, String>(target);
     final Map<String, String> rejs = new HashMap<String, String>();
-    boolean failed = false;
-    for (final PFile f : this.files)
-      failed |= !f.patch(target, dry, rejs);
-    if (failed || force)
-      writeDebug(bak, in);
-    if (failed || force)
-      writeDebug(target, out);
+    final boolean failed = _patch(target, dry, rejs);
     if (failed) {
+      writeDebug(bak, in);
+      writeDebug(target, out);
       writeDebug(rejs, rej);
       return false;
+    } else if (force) {
+      writeDebug(bak, in);
+      writeDebug(target, out);
+    }
+    return true;
+  }
+
+  public static final boolean patch(final Map<String, String> target, final File in,
+      final File out, final File rej, final boolean force, final List<String> diffs)
+      throws IOException {
+    final Map<String, String> bak = new HashMap<String, String>(target);
+    final Map<String, String> rejs = new HashMap<String, String>();
+    boolean failed = true;
+    for (final String diff : diffs) {
+      final UnifiedDiff ud = new UnifiedDiff();
+      final Reader r = new StringReader(diff);
+      final BufferedReader br = new BufferedReader(r);
+      ud.add(br, -1);
+      br.close();
+      r.close();
+      if (ud._patch(target, true, rejs))
+        continue;
+      failed = ud._patch(target, false, rejs);
+      break;
+    }
+    if (failed) {
+      writeDebug(bak, in);
+      writeDebug(target, out);
+      writeDebug(rejs, rej);
+      return false;
+    } else if (force) {
+      writeDebug(bak, in);
+      writeDebug(target, out);
     }
     return true;
   }

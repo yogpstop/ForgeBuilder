@@ -1,6 +1,5 @@
 package com.yogpc.fb;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -209,24 +208,9 @@ public final class Decompiler {
 
   private final boolean ffpatch(final Map<String, String> t, final File d1, final File d2,
       final File d3) throws IOException {
-    for (final List<String> l : this.m.ff_patch.values()) {
-      boolean done = false;
-      for (final String s : l) {
-        final UnifiedDiff ud = new UnifiedDiff();
-        final Reader r = new StringReader(s);
-        final BufferedReader br = new BufferedReader(r);
-        ud.add(br, -1);
-        br.close();
-        r.close();
-        if (!ud.patch(t, true, d1, d2, d3, false))
-          continue;
-        ud.patch(t, false, d1, d2, d3, false);
-        done = true;
-        break;
-      }
-      if (!done)
+    for (final List<String> l : this.m.ff_patch.values())
+      if (!UnifiedDiff.patch(t, d1, d2, d3, false, l))
         return false;
-    }
     return true;
   }
 
