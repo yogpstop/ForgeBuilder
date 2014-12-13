@@ -43,7 +43,7 @@ env:
         - FORGE_VERSION='355'
         #                 1.3.2
         - FORGE_VERSION='318'
-        - FORGE_VERSION='190'
+        - FORGE_VERSION='200'
         - FORGE_VERSION='188'
         #                 1.3.1
         - FORGE_VERSION='187'
@@ -70,7 +70,7 @@ matrix:
           jdk: oraclejdk8
         - env: FORGE_VERSION='318'
           jdk: oraclejdk8
-        - env: FORGE_VERSION='190'
+        - env: FORGE_VERSION='200'
           jdk: oraclejdk8
         - env: FORGE_VERSION='188'
           jdk: oraclejdk8
