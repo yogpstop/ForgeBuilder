@@ -131,8 +131,11 @@ public class FFPatcher {
         final StringBuilder sb = new StringBuilder();
         sb.append(idt2).append(matcher.group(1)).append(simpleName).append('(');
         final String[] args = Utils.split(matcher.group(2), ',');
-        for (int x = 2; x < args.length; x++)
-          sb.append(args[x]).append(x < args.length - 1 ? "," : "");
+        if (args.length > 2) {
+          args[2] = args[2].substring(1);
+          for (int x = 2; x < args.length; x++)
+            sb.append(args[x]).append(x < args.length - 1 ? "," : "");
+        }
         lines.set(i, sb.append(')').append(matcher.group(3)).toString());
       }
       if (forgevi >= 967) {
@@ -141,8 +144,11 @@ public class FFPatcher {
           final StringBuilder sb = new StringBuilder();
           sb.append(idt2).append("   ").append(matcher.group(1)).append('(');
           final String[] args = Utils.split(matcher.group(2), ',');
-          for (int x = 2; x < args.length; x++)
-            sb.append(args[x]).append(x < args.length - 1 ? "," : "");
+          if (args.length > 2) {
+            args[2] = args[2].substring(1);
+            for (int x = 2; x < args.length; x++)
+              sb.append(args[x]).append(x < args.length - 1 ? "," : "");
+          }
           lines.set(i, sb.append(");").toString());
         }
       }

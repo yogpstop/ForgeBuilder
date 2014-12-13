@@ -70,6 +70,8 @@ matrix:
           jdk: oraclejdk8
         - env: FORGE_VERSION='318'
           jdk: oraclejdk8
+        - env: FORGE_VERSION='189'
+          jdk: oraclejdk8
         - env: FORGE_VERSION='188'
           jdk: oraclejdk8
         - env: FORGE_VERSION='187'
