@@ -12,7 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,13 +21,14 @@ import com.yogpc.fb.sa.Eclipse;
 import com.yogpc.fb.sa.MavenWrapper;
 import com.yogpc.fb.sa.Patcher;
 import com.yogpc.fb.sa.ProjectConfig;
+import com.yogpc.fb.sa.ProjectConfig.ForgeVersion;
 import com.yogpc.fb.sa.Utils;
 
 public final class CompilerCaller {
   private static final Pattern env = Pattern.compile("\\{ENV:([^\\{\\}]+)\\}");
 
-  private static String replace_vnum(final String from, final String cv,
-      final ProjectConfig.ForgeVersion v, final String mcv) {
+  private static String replace_vnum(final String from, final String cv, final ForgeVersion v,
+      final String mcv) {
     String to = from.replace("{version}", cv);
     to = to.replace("{mcversion}", mcv);
     to = to.replace("{forgev}", v.forgev);
@@ -47,7 +47,7 @@ public final class CompilerCaller {
   }
 
   private static void addFileName(final StringBuilder sb, final ProjectConfig c,
-      final ProjectConfig.ForgeVersion v, final String cv) {
+      final ForgeVersion v, final String cv) {
     sb.append(File.separator);
     sb.append(c.artifactId).append('-');
     if (v.name != null)
@@ -55,8 +55,8 @@ public final class CompilerCaller {
     sb.append(cv);
   }
 
-  private static String genOutPath(final File base, final ProjectConfig c,
-      final ProjectConfig.ForgeVersion v, final String mcv, final boolean maven, final String cv) {
+  private static String genOutPath(final File base, final ProjectConfig c, final ForgeVersion v,
+      final String mcv, final boolean maven, final String cv) {
     File ret;
     if (maven) {
       final StringBuilder sb = new StringBuilder();
@@ -85,7 +85,7 @@ public final class CompilerCaller {
   }
 
   private static LinkedHashMap<Pattern, String> processReplaces(final ProjectConfig c,
-      final ProjectConfig.ForgeVersion v, final String mcv) {
+      final ForgeVersion v, final String mcv) {
     final LinkedHashMap<Pattern, String> ret = new LinkedHashMap<Pattern, String>();
     if (c.replace != null)
       for (final Map.Entry<String, String> e : c.replace.entrySet())
@@ -116,11 +116,10 @@ public final class CompilerCaller {
     srces.put(n, Utils.fileToString(f, Utils.ISO_8859_1));
   }
 
-  private static boolean loadAll(final File base, final ProjectConfig pc,
-      final ProjectConfig.ForgeVersion fv, final Map<String, String> patches, final boolean debug)
-      throws IOException {
+  private static boolean loadAll(final File base, final ProjectConfig pc, final ForgeVersion fv,
+      final Map<String, String> patches, final boolean debug) throws IOException {
     if (fv.parent != null)
-      for (final ProjectConfig.ForgeVersion p : pc.forge)
+      for (final ForgeVersion p : pc.forge)
         if (fv.parent.equals(p.name)) {
           fv.srces.putAll(p.srces);
           return Patcher.applyPatch(patches, fv, debug, new File(base, "src"));
@@ -143,15 +142,10 @@ public final class CompilerCaller {
     return true;
   }
 
-  private static final boolean has(final List<String> l, final ProjectConfig.ForgeVersion v) {
-    return l != null && (l.size() == 0 || l.contains(v.name == null ? v.forgev : v.name));
-  }
-
-  private static boolean build(final String _base, final List<String> debugs, final String eclipse,
-      final List<String> skips, final boolean mvn, final String cv) throws Exception {
+  private static boolean build(final String _base, final String eclipse, final boolean mvn,
+      final String cv, final VersionSorter vs) throws Exception {
     System.out.print("<<< Start project ");
     System.out.println(_base);
-    final LinkedList<String> compiled = new LinkedList<String>();
     final File base = new File(_base).getCanonicalFile();
     ProjectConfig pc;
     {
@@ -162,76 +156,84 @@ public final class CompilerCaller {
       r.close();
       is.close();
     }
-    final File patch = new File(base, "src" + File.separatorChar + "patch");
+    final File pdir = new File(base, "src" + File.separatorChar + "patch");
     final Map<String, String> patches = new HashMap<String, String>();
-    if (patch.exists())
-      loadDir(patch, patch, patches);
-    final Queue<ProjectConfig.ForgeVersion> q =
-        new LinkedList<ProjectConfig.ForgeVersion>(pc.forge);
-    ProjectConfig.ForgeVersion fv;
+    if (pdir.exists())
+      loadDir(pdir, pdir, patches);
+    final List<ForgeVersion> patch = new ArrayList<ForgeVersion>();
+    final List<ForgeVersion> debug = new ArrayList<ForgeVersion>();
+    final List<ForgeVersion> q = vs.sort(pc.forge, patch, debug);
     ForgeData fd = null;
-    while ((fv = q.poll()) != null) {
-      if (fv.parent != null && !compiled.contains(fv.parent)) {
-        q.add(fv);
-        continue;
-      }
+    for (final ForgeVersion fv : q) {
       System.out.print("<< Start compile of ");
-      System.out.println(fv.name == null ? fv.forgev : fv.name);
-      final boolean ecl = (fv.name == null ? fv.forgev : fv.name).equals(eclipse);
-      final boolean skip = has(skips, fv);
+      System.out.println(fv.name);
       final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
-      if (ecl || !skip) {
+      if (fv.name.equals(eclipse) || !patch.contains(fv)) {
         fd = ForgeData.get(fv.forgev);
         if (fd == null)
           return false;
-        w1.addDownload(fv.depends, ecl, false, fv.forgev);
-        w2.addDownload(fd.config.depends, ecl, false, fv.forgev);
         System.out.println("> Downloading dependencies");
-        MavenWrapper.getJar(w1, w2);// Wait for download
-        MavenWrapper.getSources(w1, w2);
-        if (ecl)
+        w1.addDownload(fv.depends, fv.name.equals(eclipse), false, fv.forgev);
+        w2.addDownload(fd.config.depends, fv.name.equals(eclipse), false, fv.forgev);
+        MavenWrapper.getJar(w1, w2);
+        if (fv.name.equals(eclipse)) {
+          MavenWrapper.getSources(w1, w2);
           Eclipse.createEclipse(base, fd, pc, fv);
+        }
       }
       System.out.println("> Load sources and resources");
-      if (!loadAll(base, pc, fv, patches, has(debugs, fv) || ecl))
+      if (!loadAll(base, pc, fv, patches, debug.contains(fv) || fv.name.equals(eclipse)))
         return false;
-      int ret = 0;
-      if (fd != null && !skip)
-        ret =
-            Compiler.compile(fv,
-                genOutPath(base, pc, fv, fd.config.mcv, mvn, cv != null ? cv : pc.version),
-                processReplaces(pc, fv, fd.config.mcv), fd, w1, w2);
-      compiled.add(fv.name == null ? fv.forgev : fv.name);
-      if (ret != 0)
-        return false;
+      if (fd != null && !patch.contains(fv))
+        if (0 != Compiler.compile(fv,
+            genOutPath(base, pc, fv, fd.config.mcv, mvn, cv != null ? cv : pc.version),
+            processReplaces(pc, fv, fd.config.mcv), fd, w1, w2)) {
+          if ("failed".equals(eclipse)) {
+            System.out.println("> Generating debug workspace");
+            w1.addDownload(fv.depends, true, false, fv.forgev);
+            w2.addDownload(fd.config.depends, true, false, fv.forgev);
+            MavenWrapper.getJar(w1, w2);
+            MavenWrapper.getSources(w1, w2);
+            Eclipse.createEclipse(base, fd, pc, fv);
+          }
+          return false;
+        }
     }
     System.out.println("<<< Compile is done");
     return true;
   }
 
+  private static final ArrayList<String> add(final String arg, final String cmp,
+      final ArrayList<String> p) {
+    ArrayList<String> list = p;;
+    if (arg.startsWith(cmp)) {
+      if (list == null)
+        list = new ArrayList<String>();
+      if (arg.length() > 2)
+        list.add(arg.substring(2));
+    }
+    return list;
+  }
+
   public static void main(final String[] args) throws Exception {
-    final List<String> skips = new ArrayList<String>();
-    final List<String> debugs = new ArrayList<String>();
-    boolean skip = false, debug = false, maven = false;
-    String ecl = null, version = null;
-    for (final String arg : args)
-      if (arg.startsWith("-s")) {
-        if (arg.length() > 2)
-          skips.add(arg.substring(2));
-        skip = true;
-      } else if (arg.startsWith("-d")) {
-        if (arg.length() > 2)
-          debugs.add(arg.substring(2));
-        debug = true;
-      } else if (arg.startsWith("-e"))
+    ArrayList<String> skip = null, debug = null, only = null, patch = null;
+    boolean maven = false;
+    String ecl = null, cv = null;
+    for (final String arg : args) {
+      skip = add(arg, "-s", skip);
+      debug = add(arg, "-d", debug);
+      only = add(arg, "-o", only);
+      patch = add(arg, "-p", patch);
+      if (arg.startsWith("-e"))
         ecl = arg.substring(2);
       else if (arg.startsWith("-v"))
-        version = arg.substring(2);
+        cv = arg.substring(2);
       else if (arg.equals("-m"))
         maven = true;
-      else if (!build(arg, debug ? debugs : null, ecl, skip ? skips : null, maven, version)) {
+      else if (!build(arg, ecl, maven, cv, new VersionSorter(skip, debug, only, patch))) {
         System.err.println("<<< Compile is failed!");
         System.exit(-1);
       }
+    }
   }
 }

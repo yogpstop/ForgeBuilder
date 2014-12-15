@@ -9,8 +9,6 @@ install:
 script:
     - java -jar target/*.jar com.yogpc.fb.ForgeData ${FORGE_VERSION}
 env:
-    global:
-        - REL_TYPE='travis'
     matrix:
         # ForgeGradle 1.2 1.8
         - FORGE_VERSION='1268'
