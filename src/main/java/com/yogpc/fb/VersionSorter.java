@@ -27,23 +27,22 @@ public class VersionSorter {
     final List<String> patch = new ArrayList<String>();
     final List<String> debug = new ArrayList<String>();
     for (final ForgeVersion v : from) {
-      if (v.name == null)
-        v.name = v.forgev;
-      map.put(v.name, v);
+      final String name = v.name == null ? v.forgev : v.name;
+      map.put(name, v);
       if (v.parent != null)
-        parent.put(v.name, v.parent);
-      if (this.gskip != null && this.gskip.contains(v.name))
+        parent.put(name, v.parent);
+      if (this.gskip != null && this.gskip.contains(name))
         continue;
-      if (this.gdebug != null && (this.gdebug.size() == 0 || this.gdebug.contains(v.name)))
-        debug.add(v.name);
-      if (this.gpatch != null && (this.gpatch.size() == 0 || this.gpatch.contains(v.name))) {
-        patch.add(v.name);
+      if (this.gdebug != null && (this.gdebug.size() == 0 || this.gdebug.contains(name)))
+        debug.add(name);
+      if (this.gpatch != null && (this.gpatch.size() == 0 || this.gpatch.contains(name))) {
+        patch.add(name);
         continue;
       }
-      if (this.gonly != null && !this.gonly.contains(v.name))
+      if (this.gonly != null && !this.gonly.contains(name))
         continue;
-      patch.add(v.name);
-      compile.add(v.name);
+      patch.add(name);
+      compile.add(name);
     }
     for (int i = 0; i < patch.size(); i++) {
       final String sp = parent.get(patch.get(i));

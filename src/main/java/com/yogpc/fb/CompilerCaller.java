@@ -52,6 +52,8 @@ public final class CompilerCaller {
     sb.append(c.artifactId).append('-');
     if (v.name != null)
       sb.append(v.name).append('-');
+    else if (v.parent != null)
+      sb.append(v.forgev).append('-');
     sb.append(cv);
   }
 
@@ -60,14 +62,12 @@ public final class CompilerCaller {
     File ret;
     if (maven) {
       final StringBuilder sb = new StringBuilder();
-      sb.append(c.groupId.replace(".", File.separator));
-      sb.append(File.separator);
-      sb.append(c.artifactId);
-      sb.append(File.separator);
-      if (v.name != null) {
-        sb.append(v.name);
-        sb.append('-');
-      }
+      sb.append(c.groupId.replace(".", File.separator)).append(File.separator);
+      sb.append(c.artifactId).append(File.separator);
+      if (v.name != null)
+        sb.append(v.name).append('-');
+      else if (v.parent != null)
+        sb.append(v.forgev).append('-');
       sb.append(cv);
       addFileName(sb, c, v, cv);
       ret = new File(Constants.MINECRAFT_LIBRARIES, sb.toString());
@@ -120,7 +120,7 @@ public final class CompilerCaller {
       final Map<String, String> patches, final boolean debug) throws IOException {
     if (fv.parent != null)
       for (final ForgeVersion p : pc.forge)
-        if (fv.parent.equals(p.name)) {
+        if (fv.parent.equals(p.name == null ? p.forgev : p.name)) {
           fv.srces.putAll(p.srces);
           return Patcher.applyPatch(patches, fv, debug, new File(base, "src"));
         }
@@ -134,7 +134,7 @@ public final class CompilerCaller {
     else
       from.addAll(pc.resources);
     if (fv.src_base == null)
-      fv.src_base = "src/" + (fv.parent == null ? "main" : fv.name);
+      fv.src_base = "src/" + (fv.parent == null ? "main" : fv.name == null ? fv.forgev : fv.name);
     final File sbase = new File(base, fv.src_base.replace('/', File.separatorChar));
     for (final String s : from)
       loadDir(new File(sbase, s.replace('/', File.separatorChar)),
@@ -166,23 +166,24 @@ public final class CompilerCaller {
     ForgeData fd = null;
     for (final ForgeVersion fv : q) {
       System.out.print("<< Start compile of ");
-      System.out.println(fv.name);
+      System.out.println(fv.name == null ? fv.forgev : fv.name);
+      final boolean ecl = (fv.name == null ? fv.forgev : fv.name).equals(eclipse);
       final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
-      if (fv.name.equals(eclipse) || !patch.contains(fv)) {
+      if (ecl || !patch.contains(fv)) {
         fd = ForgeData.get(fv.forgev);
         if (fd == null)
           return false;
         System.out.println("> Downloading dependencies");
-        w1.addDownload(fv.depends, fv.name.equals(eclipse), false, fv.forgev);
-        w2.addDownload(fd.config.depends, fv.name.equals(eclipse), false, fv.forgev);
+        w1.addDownload(fv.depends, ecl, false, fv.forgev);
+        w2.addDownload(fd.config.depends, ecl, false, fv.forgev);
         MavenWrapper.getJar(w1, w2);
-        if (fv.name.equals(eclipse)) {
+        if (ecl) {
           MavenWrapper.getSources(w1, w2);
           Eclipse.createEclipse(base, fd, pc, fv);
         }
       }
       System.out.println("> Load sources and resources");
-      if (!loadAll(base, pc, fv, patches, debug.contains(fv) || fv.name.equals(eclipse)))
+      if (!loadAll(base, pc, fv, patches, debug.contains(fv) || ecl))
         return false;
       if (fd != null && !patch.contains(fv))
         if (0 != Compiler.compile(fv,
