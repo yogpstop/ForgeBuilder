@@ -206,7 +206,7 @@ public final class CompilerCaller {
 
   private static final ArrayList<String> add(final String arg, final String cmp,
       final ArrayList<String> p) {
-    ArrayList<String> list = p;;
+    ArrayList<String> list = p;
     if (arg.startsWith(cmp)) {
       if (list == null)
         list = new ArrayList<String>();
@@ -225,6 +225,8 @@ public final class CompilerCaller {
       debug = add(arg, "-d", debug);
       only = add(arg, "-o", only);
       patch = add(arg, "-p", patch);
+      if (arg.charAt(0) == '-' && "sdop".contains(arg.substring(1, 2)))
+        continue;
       if (arg.startsWith("-e"))
         ecl = arg.substring(2);
       else if (arg.startsWith("-v"))
