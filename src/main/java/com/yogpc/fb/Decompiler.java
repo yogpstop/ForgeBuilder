@@ -192,20 +192,6 @@ public final class Decompiler {
     }
   }
 
-  private static final String MC_BASE = "https://s3.amazonaws.com/Minecraft.Download/versions/";
-  private static final File MINECRAFT_VERSIONS = new File(Constants.MINECRAFT_DIR, "versions");
-
-  private final File[] download() throws Exception {
-    final Downloader[] a =
-        new Downloader[] {
-            new Downloader(this.forgev, new URL(this.url), "jar"),
-            new Downloader(this.mcv, new URL(MC_BASE + this.mcv + "/" + this.mcv + ".jar"),
-                new File(MINECRAFT_VERSIONS, this.mcv + File.separatorChar + this.mcv + ".jar")),
-            new Downloader(this.mcv + "server", new URL(MC_BASE + this.mcv + "/minecraft_server."
-                + this.mcv + ".jar"), "jar")};
-    return new File[] {a[0].process(null), a[1].process(null), a[2].process(null)};
-  }
-
   private final boolean ffpatch(final Map<String, String> t, final File d1, final File d2,
       final File d3) throws IOException {
     for (final List<String> l : this.m.ff_patch.values())
@@ -223,16 +209,19 @@ public final class Decompiler {
     dbg2.delete();
     dbg3.delete();
     System.out.println("<<< Start decompile");
-    System.out.println("> Start downloads");
+    System.out.println("> Start forge zip download");
     final MCPData md = new MCPData(this.url, this.forgev, this.mcv);
-    final File[] files = download();
-    this.m.load_forge_zip(files[0]);
+    final File fzip = new Downloader(this.forgev, new URL(this.url), "jar").process(null);
+    this.m.load_forge_zip(fzip);
     md.patch(this.m.ss);
     this.m.finalyze();
     System.out.println("> Start MCPMerge AccessTransformer MCInjector and SpecialSource");
-    final MainTransformer trans = new MainTransformer(this.forgevi, null, this.m);
+    final MainTransformer trans = new MainTransformer(this.forgevi, this.m);
     final File tmp = File.createTempFile("ForgeBuilder", ".jar");
-    trans.process_jar(files[2], files[1], tmp);
+    final Map<String, byte[]> res = new HashMap<String, byte[]>();
+    final OutputStream sout = new FileOutputStream(tmp);
+    MainTransformer.write_jar(sout, trans.process_jar(this.mcv, res), res, null);
+    sout.close();
     System.out.println("> Start fernflower");
     fernflower(tmp);
     System.out.println("> Start ffpatcher");

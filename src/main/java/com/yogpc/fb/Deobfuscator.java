@@ -5,15 +5,20 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.xml.bind.DatatypeConverter;
 
 import com.yogpc.fb.asm.MainTransformer;
 import com.yogpc.fb.map.JarMapping;
+import com.yogpc.fb.map.MappingBuilder;
+import com.yogpc.fb.sa.Constants;
 import com.yogpc.fb.sa.IProcessor;
 
 public class Deobfuscator implements IProcessor {
@@ -92,20 +97,21 @@ public class Deobfuscator implements IProcessor {
     final File cfg = new File(op + ".cfg");
     final Properties p = new Properties();
     if (!check(in, out, cfg, p)) {
-      final ForgeData fd = ForgeData.get(this.fv);
-      if (fd == null)
-        return null;
-      final MainTransformer mt = new MainTransformer(Integer.parseInt(this.fv), null, fd.srg);
+      final JarMapping tsrg = new JarMapping();
+      MappingBuilder.loadNew(new File(Constants.DATA_DIR, this.fv + ".srg"), tsrg);
+      final MainTransformer mt = new MainTransformer(Integer.parseInt(this.fv), tsrg);
       for (final String s : this.cp)
         mt.addCP(new File(s));
-      mt.process_jar(in, out, null, null, this.srg ? JarMapping.SRG_RAW : JarMapping.OBF_RAW);
+      out.getParentFile().mkdirs();
+      final OutputStream os = new FileOutputStream(out);
       final MessageDigest md = MessageDigest.getInstance("SHA-512");
-      final byte[] buf = new byte[8192];
-      int nread;
-      final InputStream is = new FileInputStream(out);
-      while ((nread = is.read(buf)) > -1)
-        md.update(buf, 0, nread);
-      is.close();
+      final OutputStream wos = new DigestOutputStream(os, md);
+      final Map<String, byte[]> res = new HashMap<String, byte[]>();
+      MainTransformer.write_jar(wos,
+          mt.process_jar(in, res, null, null, this.srg ? JarMapping.SRG_RAW : JarMapping.OBF_RAW),
+          res, null);
+      wos.close();
+      os.close();
       p.setProperty("OUT_HASH", DatatypeConverter.printHexBinary(md.digest()));
     }
     final OutputStream os = new FileOutputStream(cfg);

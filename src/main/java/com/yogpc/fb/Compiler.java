@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -134,12 +135,17 @@ public final class Compiler {
     }
     System.out.println("> Obfuscating");
     final int forgevi = Integer.parseInt(fv.forgev);
-    final MainTransformer trans = new MainTransformer(forgevi, fd.config.identifier, fd.srg);
+    final MainTransformer trans = new MainTransformer(forgevi, fd.srg);
     trans.addCP(fd.jar);
     for (final File f : MavenWrapper.getJar(w1))
       trans.addCP(f);
-    trans.process_jar(dev, new File(out.replace("{type}", "jar") + ".jar"), depCls, fv.contains,
-        forgevi <= 534 ? JarMapping.RAW_OBF : JarMapping.RAW_SRG);
+    final File of = new File(out.replace("{type}", "jar") + ".jar");
+    of.getParentFile().mkdirs();
+    final OutputStream os = new FileOutputStream(of);
+    final Map<String, byte[]> res = new HashMap<String, byte[]>();
+    MainTransformer.write_jar(os, trans.process_jar(dev, res, depCls, fv.contains,
+        forgevi <= 534 ? JarMapping.RAW_OBF : JarMapping.RAW_SRG), res, fd.config.identifier);
+    os.close();
     return 0;
   }
 }

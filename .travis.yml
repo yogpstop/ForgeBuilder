@@ -11,11 +11,11 @@ script:
 env:
     matrix:
         # ForgeGradle 1.2 1.8
-        - FORGE_VERSION='1268'
+        - FORGE_VERSION='1325'
         - FORGE_VERSION='1238'
         - FORGE_VERSION='1237'
         #                 1.7.10
-        - FORGE_VERSION='1264'
+        - FORGE_VERSION='1307'
         - FORGE_VERSION='1208'
         - FORGE_VERSION='1150'
         #                 1.7.2

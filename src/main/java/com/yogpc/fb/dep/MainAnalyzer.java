@@ -1,9 +1,7 @@
 package com.yogpc.fb.dep;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,17 +24,13 @@ public class MainAnalyzer extends Remapper {
   }
 
   public void addCP(final File arg) throws IOException {
-    final InputStream is = new FileInputStream(arg);
-    MainTransformer.read_jar(is, null, this.cp, null, null);
-    is.close();
+    MainTransformer.read_jar(arg, null, this.cp, null, null);
   }
 
   public Collection<String> process(final File arg) throws Exception {
     final Collection<String> done = new ArrayList<String>();
     final Collection<String> todo = new ArrayList<String>();
-    final InputStream is = new FileInputStream(arg);
-    MainTransformer.read_jar(is, todo, this.cp, null, null);
-    is.close();
+    MainTransformer.read_jar(arg, todo, this.cp, null, null);
     do {
       for (final String s : todo) {
         done.add(s);

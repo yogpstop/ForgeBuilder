@@ -1,9 +1,5 @@
 package com.yogpc.fb.map;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,18 +9,11 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.ClassNode;
 
-import com.yogpc.fb.asm.MainTransformer;
 import com.yogpc.fb.fix.AsmFixer;
 
 public class JarRemapper {
   private Map<String, ClassNode> nodes;
-  private final Map<String, ClassNode> cp = new HashMap<String, ClassNode>();
-
-  public void addCP(final File arg) throws IOException {
-    final InputStream is = new FileInputStream(arg);
-    MainTransformer.read_jar(is, null, this.cp, null, null);
-    is.close();
-  }
+  public final Map<String, ClassNode> cp = new HashMap<String, ClassNode>();
 
   public Map<String, ClassNode> process(final Map<String, ClassNode> in, final int mode,
       final JarMapping jm, final Collection<String> depCls, final Collection<String> mask)
