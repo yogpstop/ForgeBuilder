@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -127,20 +128,20 @@ public class Downloader implements Runnable, IProcessor {
     this.t.start();
   }
 
-  public Downloader(final String n, final URL u, final String e) {
+  public Downloader(final String n, final String u, final String e) throws MalformedURLException {
     this.name = n;
     this.maven = null;
-    this.url = u;
+    this.url = new URL(u);
     this.ret = null;
     this.ext = e;
     this.t = new Thread(this);
     this.t.start();
   }
 
-  public Downloader(final String n, final URL u, final File f) {
+  public Downloader(final String n, final String u, final File f) throws MalformedURLException {
     this.name = n;
     this.maven = null;
-    this.url = u;
+    this.url = new URL(u);
     this.ret = f;
     this.ext = null;
     this.t = new Thread(this);

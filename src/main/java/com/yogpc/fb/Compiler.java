@@ -134,7 +134,7 @@ public final class Compiler {
       depCls = ma.process(dev);
     }
     System.out.println("> Obfuscating");
-    final int forgevi = Integer.parseInt(fv.forgev);
+    final int forgevi = Utils.atoi(fv.forgev, 9999);
     final MainTransformer trans = new MainTransformer(forgevi, fd.srg);
     trans.addCP(fd.jar);
     for (final File f : MavenWrapper.getJar(w1))

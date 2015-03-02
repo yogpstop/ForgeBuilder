@@ -144,6 +144,7 @@ public final class CompilerCaller {
 
   private static boolean build(final String _base, final String eclipse, final boolean mvn,
       final String cv, final VersionSorter vs) throws Exception {
+    final boolean failed_debug = "failed".equals(eclipse);
     System.out.print("<<< Start project ");
     System.out.println(_base);
     final File base = new File(_base).getCanonicalFile();
@@ -163,42 +164,34 @@ public final class CompilerCaller {
     final List<ForgeVersion> patch = new ArrayList<ForgeVersion>();
     final List<ForgeVersion> debug = new ArrayList<ForgeVersion>();
     final List<ForgeVersion> q = vs.sort(pc.forge, patch, debug);
-    ForgeData fd = null;
     for (final ForgeVersion fv : q) {
       System.out.print("<< Start compile of ");
       System.out.println(fv.name == null ? fv.forgev : fv.name);
       final boolean ecl = (fv.name == null ? fv.forgev : fv.name).equals(eclipse);
       final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
-      if (ecl || !patch.contains(fv)) {
-        fd = ForgeData.get(fv.forgev);
-        if (fd == null)
-          return false;
-        System.out.println("> Downloading dependencies");
-        w1.addDownload(fv.depends, ecl, false, fv.forgev);
-        w2.addDownload(fd.config.depends, ecl, false, fv.forgev);
-        MavenWrapper.getJar(w1, w2);
-        if (ecl) {
-          MavenWrapper.getSources(w1, w2);
-          Eclipse.createEclipse(base, fd, pc, fv);
-        }
-      }
       System.out.println("> Load sources and resources");
-      if (!loadAll(base, pc, fv, patches, debug.contains(fv) || ecl))
+      final boolean loaded = loadAll(base, pc, fv, patches, debug.contains(fv) || ecl);
+      if (loaded && patch.contains(fv) && !ecl)
+        continue;
+      if (!loaded && !failed_debug && !ecl)
         return false;
-      if (fd != null && !patch.contains(fv))
-        if (0 != Compiler.compile(fv,
-            genOutPath(base, pc, fv, fd.config.mcv, mvn, cv != null ? cv : pc.version),
-            processReplaces(pc, fv, fd.config.mcv), fd, w1, w2)) {
-          if ("failed".equals(eclipse)) {
-            System.out.println("> Generating debug workspace");
-            w1.addDownload(fv.depends, true, false, fv.forgev);
-            w2.addDownload(fd.config.depends, true, false, fv.forgev);
-            MavenWrapper.getJar(w1, w2);
-            MavenWrapper.getSources(w1, w2);
-            Eclipse.createEclipse(base, fd, pc, fv);
-          }
-          return false;
-        }
+      final ForgeData fd = ForgeData.get(fv.forgev);
+      if (fd == null)
+        return false;
+      System.out.println("> Downloading dependencies");
+      w1.addDownload(fv.depends, true, false, fv.forgev);
+      w2.addDownload(fd.config.depends, true, false, fv.forgev);
+      MavenWrapper.getJar(w1, w2);
+      final int cret =
+          !loaded || patch.contains(fv) ? 0 : Compiler.compile(fv,
+              genOutPath(base, pc, fv, fd.config.mcv, mvn, cv != null ? cv : pc.version),
+              processReplaces(pc, fv, fd.config.mcv), fd, w1, w2);
+      if (ecl || failed_debug && (!loaded || cret != 0)) {
+        MavenWrapper.getSources(w1, w2);
+        Eclipse.createEclipse(base, fd, pc, fv);
+      }
+      if (cret != 0 || !loaded)
+        return false;
     }
     System.out.println("<<< Compile is done");
     return true;

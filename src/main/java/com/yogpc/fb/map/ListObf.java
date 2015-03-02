@@ -1,5 +1,8 @@
 package com.yogpc.fb.map;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -7,6 +10,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
 import com.yogpc.fb.asm.MainTransformer;
+import com.yogpc.fb.sa.Utils;
 
 public class ListObf {
   public static void main(final String[] args) throws Exception {
@@ -24,7 +28,9 @@ public class ListObf {
     }
     final String fmt =
         String.format("%%%ds %%-%ds\n", Integer.valueOf(max_int), Integer.valueOf(max_strlen));
+    final OutputStream os = new FileOutputStream(new File(args[1]));
     for (final Map.Entry<String, String> f : size.entrySet())
-      System.out.printf(fmt, f.getValue(), f.getKey());
+      os.write(String.format(fmt, f.getValue(), f.getKey()).getBytes(Utils.UTF_8));
+    os.close();
   }
 }

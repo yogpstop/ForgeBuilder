@@ -11,6 +11,8 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import com.yogpc.fb.sa.Utils;
+
 public class LVTTransformer {
   private final TransformRule ops;
   private final boolean gradle;
@@ -21,7 +23,7 @@ public class LVTTransformer {
     this.gradle = g;
     final String tmp = this.ops.getMarker("max_constructor_index");
     if (tmp != null)
-      this.ii = Integer.parseInt(tmp);
+      this.ii = Utils.atoi(tmp, 1000);
     else
       this.ii = 1000;
   }

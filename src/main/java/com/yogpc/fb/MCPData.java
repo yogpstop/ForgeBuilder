@@ -3,7 +3,6 @@ package com.yogpc.fb;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,8 +47,8 @@ public class MCPData implements Runnable {
       return;
     try {
       File f =
-          new Downloader(this.fv + "src", new URL(this.url.substring(0, this.url.length() - 11)
-              + "src.zip"), "zip").process(null);
+          new Downloader(this.fv + "src",
+              this.url.substring(0, this.url.length() - 11) + "src.zip", "zip").process(null);
       InputStream is = new FileInputStream(f);
       ZipInputStream in = new ZipInputStream(is);
       ZipEntry entry;

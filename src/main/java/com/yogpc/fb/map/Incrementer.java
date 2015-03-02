@@ -26,9 +26,27 @@ public class Incrementer extends Remapper {
   public static final Comparator<String> CMP = new Comparator<String>() {
     @Override
     public int compare(final String o1, final String o2) {
-      if (o1.length() != o2.length())
-        return o1.length() - o2.length();
-      return o1.compareTo(o2);
+      final char v1[] = o1.toCharArray(), v2[] = o2.toCharArray();
+      final int len1 = v1.length, len2 = v2.length;
+      if (len1 != len2)
+        return len1 - len2;
+      int k = 0;
+      while (k < len1) {
+        char c1 = v1[k];
+        if ('A' <= c1 && c1 <= 'Z')
+          c1 = (char) (c1 + ('a' - 'A'));
+        else if ('a' <= c1 && c1 <= 'z')
+          c1 = (char) (c1 + ('A' - 'a'));
+        char c2 = v2[k];
+        if ('A' <= c2 && c2 <= 'Z')
+          c2 = (char) (c2 + ('a' - 'A'));
+        else if ('a' <= c2 && c2 <= 'z')
+          c2 = (char) (c2 + ('A' - 'a'));
+        if (c1 != c2)
+          return c1 - c2;
+        k++;
+      }
+      return 0;
     }
   };
 
@@ -55,7 +73,7 @@ public class Incrementer extends Remapper {
       else if (arg.startsWith("+"))
         onnew.add(arg.substring(1));
       else if (!loaded) {
-        MappingBuilder.loadNew(new File(arg), jm);
+        MappingBuilder.loadNew(Utils.fileToString(new File(arg), Utils.UTF_8), jm, true);
         loaded = true;
       } else if (!oldload) {
         lold = load(arg);

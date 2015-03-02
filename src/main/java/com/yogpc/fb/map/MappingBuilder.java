@@ -1,6 +1,5 @@
 package com.yogpc.fb.map;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
@@ -10,8 +9,8 @@ import com.yogpc.fb.sa.CSVParser;
 import com.yogpc.fb.sa.Utils;
 
 public class MappingBuilder {
-  public static final void loadNew(final File f, final JarMapping jm) throws IOException {
-    for (final String line : Utils.fileToString(f, Utils.UTF_8).split("\n")) {
+  public static final void loadNew(final String s, final JarMapping jm, final boolean fm) {
+    for (final String line : s.split("\n")) {
       final String[] es = Utils.split(line, ',');
       if (es[0].equals("CLS")) {
         jm.cls_obf_raw.put(es[1], es[2]);
@@ -19,7 +18,7 @@ public class MappingBuilder {
       } else if (es[0].equals("PKG")) {
         jm.pkg_obf_raw.put(es[1], es[2]);
         jm.pkg_raw_obf.put(es[2], es[1]);
-      } else {
+      } else if (fm) {
         final JarMapping.SrgEntry e = new JarMapping.SrgEntry();
         e.raw = es[1];
         for (int i = 2; i < es.length; i++) {

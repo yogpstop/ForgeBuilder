@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import com.yogpc.fb.map.JarMapping;
 import com.yogpc.fb.map.MappingBuilder;
 import com.yogpc.fb.sa.Constants;
+import com.yogpc.fb.sa.Utils;
 
 public class ForgeData {
   private static final HashMap<String, ForgeData> versions = new HashMap<String, ForgeData>();
@@ -35,7 +36,7 @@ public class ForgeData {
     this.config = new Gson().fromJson(r, ForgeConfig.class);
     r.close();
     this.jar = j;
-    MappingBuilder.loadNew(s, this.srg);
+    MappingBuilder.loadNew(Utils.fileToString(s, Utils.UTF_8), this.srg, true);
   }
 
   static ForgeData get(final String version) throws Exception {

@@ -20,6 +20,7 @@ import com.yogpc.fb.map.JarMapping;
 import com.yogpc.fb.map.MappingBuilder;
 import com.yogpc.fb.sa.Constants;
 import com.yogpc.fb.sa.IProcessor;
+import com.yogpc.fb.sa.Utils;
 
 public class Deobfuscator implements IProcessor {
   public static void main(final String[] args) throws Exception {
@@ -37,9 +38,8 @@ public class Deobfuscator implements IProcessor {
         b = new Boolean(true);
       else if (arg.equals("-b"))
         b = new Boolean(false);
-    final int fvi = Integer.parseInt(fv);
     if (b == null)
-      b = new Boolean(fvi > 534);
+      b = new Boolean(Utils.atoi(fv, 9999) > 534);
     new Deobfuscator(b.booleanValue(), fv, cp).process(new File(in));
   }
 
@@ -98,8 +98,10 @@ public class Deobfuscator implements IProcessor {
     final Properties p = new Properties();
     if (!check(in, out, cfg, p)) {
       final JarMapping tsrg = new JarMapping();
-      MappingBuilder.loadNew(new File(Constants.DATA_DIR, this.fv + ".srg"), tsrg);
-      final MainTransformer mt = new MainTransformer(Integer.parseInt(this.fv), tsrg);
+      MappingBuilder.loadNew(
+          Utils.fileToString(new File(Constants.DATA_DIR, this.fv + ".srg"), Utils.UTF_8), tsrg,
+          true);
+      final MainTransformer mt = new MainTransformer(Utils.atoi(this.fv, 9999), tsrg);
       for (final String s : this.cp)
         mt.addCP(new File(s));
       out.getParentFile().mkdirs();

@@ -208,6 +208,8 @@ public final class Mapping {
           MappingBuilder.loadCsv(new String(d, Utils.ISO_8859_1), this.ss, true, false);
         else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.endsWith(".srg"))
           MappingBuilder.loadSrg(new String(d, Utils.ISO_8859_1), this.ss);
+        else if (n.equals("yogpstop/srg"))// TODO my tweaks
+          MappingBuilder.loadNew(new String(d, Utils.ISO_8859_1), this.ss, true);
         else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.contains(".patch")
             && !n.contains("minecraft_server_ff"))
           loadFFPatch(n, d);

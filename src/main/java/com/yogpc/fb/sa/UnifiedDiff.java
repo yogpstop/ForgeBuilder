@@ -56,16 +56,16 @@ public final class UnifiedDiff {
       final Matcher m = p.matcher(at);
       m.matches();
       String buf;
-      this.from_pos = Integer.parseInt(m.group(1));
+      this.from_pos = Utils.atoi(m.group(1), 0);
       buf = m.group(3);
       if (buf != null && buf.length() > 0)
-        this.from_len = Integer.parseInt(buf);
+        this.from_len = Utils.atoi(buf, 1);
       else
         this.from_len = 1;
-      this.to_pos = Integer.parseInt(m.group(4));
+      this.to_pos = Utils.atoi(m.group(4), 0);
       buf = m.group(6);
       if (buf != null && buf.length() > 0)
-        this.to_len = Integer.parseInt(buf);
+        this.to_len = Utils.atoi(buf, 1);
       else
         this.to_len = 1;
       int from = 0, to = 0;

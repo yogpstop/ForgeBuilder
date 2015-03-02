@@ -24,6 +24,20 @@ public final class Utils {
   public static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
   public static final Object DUMMY_OBJECT = new Object();
 
+  public static int atoi(final String s, final int def) {
+    int result = 0;
+    int i = 0;
+    final int len = s.length();
+    int digit;
+    while (i < len) {
+      digit = s.charAt(i++) - '0';
+      if (digit < 0 || 9 < digit)
+        return def;
+      result = result * 10 + digit;
+    }
+    return result;
+  }
+
   public static final void jar_dir(final ZipOutputStream out, final List<String> dir,
       final String entry) throws IOException {
     final int i = entry.lastIndexOf('/');

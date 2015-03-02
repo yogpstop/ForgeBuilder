@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -142,10 +141,10 @@ public class MainTransformer {
   private static final File[] mc_get(final String mcv) throws Exception {
     final Downloader[] a =
         new Downloader[] {
-            new Downloader(mcv, new URL(MC_BASE + mcv + "/" + mcv + ".jar"), new File(
-                MINECRAFT_VERSIONS, mcv + File.separatorChar + mcv + ".jar")),
-            new Downloader(mcv + "server", new URL(MC_BASE + mcv + "/minecraft_server." + mcv
-                + ".jar"), "jar")};
+            new Downloader(mcv, MC_BASE + mcv + "/" + mcv + ".jar", new File(MINECRAFT_VERSIONS,
+                mcv + File.separatorChar + mcv + ".jar")),
+            new Downloader(mcv + "server", MC_BASE + mcv + "/minecraft_server." + mcv + ".jar",
+                "jar")};
     return new File[] {a[0].process(null), a[1].process(null)};
   }
 

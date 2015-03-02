@@ -11,12 +11,12 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,7 +65,7 @@ public final class Decompiler {
   static final boolean exec(final String version) throws Exception {
     if (list == null) {
       final Queue<Downloader> l = new LinkedList<Downloader>();
-      l.add(new Downloader("forge_main", new URL(Constants.FORGE_BASE + "minecraftforge/"), "html"));
+      l.add(new Downloader("forge_main", Constants.FORGE_BASE + "minecraftforge/", "html"));
       list = new HashMap<String, Decompiler>();
       Downloader d;
       while ((d = l.poll()) != null) {
@@ -77,7 +77,7 @@ public final class Decompiler {
         while (y.find()) {
           if (y.group(1).endsWith(".css") || y.group(1).endsWith(".html"))
             continue;
-          l.add(new Downloader("forge_" + y.group(1), new URL(y.group()), "html"));
+          l.add(new Downloader("forge_" + y.group(1), y.group(), "html"));
         }
         for (final Pattern p : FORGE_PATTERN) {
           final Matcher z = p.matcher(data);
@@ -85,23 +85,51 @@ public final class Decompiler {
             list.put(z.group(3), new Decompiler(z.group(3), z.group(), z.group(1)));
         }
       }
+      final InputStream is = new FileInputStream(new File(Constants.DATA_DIR, "custom.cfg"));
+      final Properties p = new Properties();
+      p.load(is);
+      for (final String s : p.stringPropertyNames()) {
+        final String v = p.getProperty(s);
+        final int i = v.indexOf(':');
+        final Decompiler t = list.get(v.substring(i + 1));
+        list.put(s, new Decompiler(t.forgev, t.url, v.substring(0, i), new File(Constants.DATA_DIR,
+            s), t.mmcv));
+      }
+      is.close();
     }
     return list.get(version).decompile();
   }
 
-  private final String forgev, url, mcv;
+  private final String forgev, url, mcv, mmcv;
   private final int forgevi;
   private final Mapping m;
+  private final File cff;// TODO my tweaks
 
   private Decompiler(final String _forgev, final String _url, final String _mcv) {
+    this.cff = null;
     this.m = new Mapping();
     this.forgev = _forgev;
-    this.forgevi = Integer.parseInt(_forgev);
+    this.forgevi = Utils.atoi(_forgev, 9999);
     this.url = _url;
     if (this.forgevi < 188)
-      this.mcv = "1.3.1";
+      this.mcv = this.mmcv = "1.3.1";
     else
+      this.mcv = this.mmcv = _mcv;
+  }
+
+  private Decompiler(final String _forgev, final String _url, final String _mcv, final File _cff,
+      final String _mmcv) {
+    this.cff = _cff;
+    this.m = new Mapping();
+    this.forgev = _forgev;
+    this.forgevi = Utils.atoi(_forgev, 9999);
+    this.url = _url;
+    if (this.forgevi < 188)
+      this.mcv = this.mmcv = "1.3.1";
+    else {
       this.mcv = _mcv;
+      this.mmcv = _mmcv;
+    }
   }
 
   private final int fernflower(final File in) throws IOException, InterruptedException {
@@ -210,8 +238,9 @@ public final class Decompiler {
     dbg3.delete();
     System.out.println("<<< Start decompile");
     System.out.println("> Start forge zip download");
-    final MCPData md = new MCPData(this.url, this.forgev, this.mcv);
-    final File fzip = new Downloader(this.forgev, new URL(this.url), "jar").process(null);
+    final MCPData md = new MCPData(this.url, this.forgev, this.mmcv);
+    final File fzip =
+        this.cff != null ? this.cff : new Downloader(this.forgev, this.url, "jar").process(null);
     this.m.load_forge_zip(fzip);
     md.patch(this.m.ss);
     this.m.finalyze();
