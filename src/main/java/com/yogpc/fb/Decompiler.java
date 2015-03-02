@@ -85,17 +85,20 @@ public final class Decompiler {
             list.put(z.group(3), new Decompiler(z.group(3), z.group(), z.group(1)));
         }
       }
-      final InputStream is = new FileInputStream(new File(Constants.DATA_DIR, "custom.cfg"));
-      final Properties p = new Properties();
-      p.load(is);
-      for (final String s : p.stringPropertyNames()) {
-        final String v = p.getProperty(s);
-        final int i = v.indexOf(':');
-        final Decompiler t = list.get(v.substring(i + 1));
-        list.put(s, new Decompiler(t.forgev, t.url, v.substring(0, i), new File(Constants.DATA_DIR,
-            s), t.mmcv));
+      final File cc = new File(Constants.DATA_DIR, "custom.cfg");
+      if (cc.isFile()) {
+        final InputStream is = new FileInputStream(cc);
+        final Properties p = new Properties();
+        p.load(is);
+        for (final String s : p.stringPropertyNames()) {
+          final String v = p.getProperty(s);
+          final int i = v.indexOf(':');
+          final Decompiler t = list.get(v.substring(i + 1));
+          list.put(s, new Decompiler(t.forgev, t.url, v.substring(0, i), new File(
+              Constants.DATA_DIR, s), t.mmcv));
+        }
+        is.close();
       }
-      is.close();
     }
     return list.get(version).decompile();
   }
@@ -106,15 +109,7 @@ public final class Decompiler {
   private final File cff;// TODO my tweaks
 
   private Decompiler(final String _forgev, final String _url, final String _mcv) {
-    this.cff = null;
-    this.m = new Mapping();
-    this.forgev = _forgev;
-    this.forgevi = Utils.atoi(_forgev, 9999);
-    this.url = _url;
-    if (this.forgevi < 188)
-      this.mcv = this.mmcv = "1.3.1";
-    else
-      this.mcv = this.mmcv = _mcv;
+    this(_forgev, _url, _mcv, null, _mcv);
   }
 
   private Decompiler(final String _forgev, final String _url, final String _mcv, final File _cff,
