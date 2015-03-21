@@ -99,6 +99,7 @@ public final class Compiler {
     l.add("-target");
     l.add("1.6");
     l.add("@" + cfg.getPath());
+    // TODO less process
     final Process p = new ProcessBuilder(l).redirectErrorStream(true).start();
     final InputStream is = p.getInputStream();
     int i;

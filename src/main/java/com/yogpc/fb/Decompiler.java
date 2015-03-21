@@ -151,6 +151,7 @@ public final class Decompiler {
     l.add("-log=ERROR");
     l.add(in.getPath());
     l.add(tmp.getPath());
+    // TODO less process
     final Process p = new ProcessBuilder(l).redirectErrorStream(true).start();
     final InputStream is = p.getInputStream();
     while (is.read() > -1)

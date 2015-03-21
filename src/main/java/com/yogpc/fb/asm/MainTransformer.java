@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.jar.JarFile;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -155,11 +154,11 @@ public class MainTransformer {
     final List<String> all = new ArrayList<String>();
     final Map<String, ClassNode> cli = new HashMap<String, ClassNode>();
     final Map<String, ClassNode> srv = new HashMap<String, ClassNode>();
-    final boolean man = this.ops.dontProcess.put(JarFile.MANIFEST_NAME, Utils.DUMMY_OBJECT) == null;
+    final boolean man = this.ops.dontProcess.put("META-INF/", Utils.DUMMY_OBJECT) == null;
     read_jar(mcz[0], all, cli, res, this.ops.dontProcess);
     read_jar(mcz[1], all, srv, res, this.ops.dontProcess);
     if (man)
-      this.ops.dontProcess.remove(JarFile.MANIFEST_NAME);
+      this.ops.dontProcess.remove("META-INF/");
     Map<String, ClassNode> ret = this.st.process(all, srv, cli);
     if (this.lt != null) {
       for (final ClassNode cn : ret.values())
