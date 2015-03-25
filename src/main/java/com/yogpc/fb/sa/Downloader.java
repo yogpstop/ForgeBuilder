@@ -2,6 +2,7 @@ package com.yogpc.fb.sa;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,76 +12,18 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Downloader implements Runnable, IProcessor {
-  private static File tryDownload(final URL url, final String base, final File tout,
-      final String ext) throws NoSuchAlgorithmException, IOException {
-    final byte[] buf = new byte[8192];
-    int nread;
-    File out = new File(Constants.DATA_DIR, "cache" + File.separator + base);
-    final File etag = new File(out, "etag");
-    final File lm = new File(out, "lm");
-    final File sum = new File(out, "sum");
-    if (tout != null)
-      out = tout;
-    else
-      out = new File(out, "file." + ext);
-    if (!out.exists()) {
-      etag.delete();
-      lm.delete();
-      sum.delete();
-      out.delete();
-    } else if (sum.exists()) {
-      final MessageDigest md = MessageDigest.getInstance("SHA-512");
-      final InputStream is = new FileInputStream(out);
-      while ((nread = is.read(buf)) > -1)
-        md.update(buf, 0, nread);
-      is.close();
-      if (!Arrays.equals(md.digest(), Utils.fileToByteArray(sum))) {
-        etag.delete();
-        lm.delete();
-        sum.delete();
-        out.delete();
-      }
-    }
-
-    final HttpURLConnection uc = (HttpURLConnection) url.openConnection();
-    uc.setInstanceFollowRedirects(true);
-    if (etag.exists())
-      uc.setRequestProperty("If-None-Match", Utils.fileToString(etag, Utils.UTF_8));
-    if (lm.exists())
-      uc.setRequestProperty("If-Modified-Since", Utils.fileToString(lm, Utils.UTF_8));
-    uc.connect();
-    if (uc.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED)
-      return out;
-    if (uc.getResponseCode() != HttpURLConnection.HTTP_OK)
-      return null;
-    out.getParentFile().mkdirs();
-    sum.getParentFile().mkdirs();
-    if (uc.getHeaderField("ETag") != null)
-      Utils.stringToFile(uc.getHeaderField("ETag"), etag, Utils.UTF_8);
-    if (uc.getHeaderField("Last-Modified") != null)
-      Utils.stringToFile(uc.getHeaderField("Last-Modified"), lm, Utils.UTF_8);
-    final MessageDigest md = MessageDigest.getInstance("SHA-512");
-    final InputStream is = uc.getInputStream();
-    final OutputStream os = new FileOutputStream(out);
-    while ((nread = is.read(buf)) > -1) {
-      os.write(buf, 0, nread);
-      md.update(buf, 0, nread);
-    }
-    os.close();
-    is.close();
-    uc.disconnect();
-    Utils.byteArrayToFile(md.digest(), sum);
-    return out;
+  private static File[] genPath(final String base, final File tout, final String ext) {
+    final File out = new File(Constants.DATA_DIR, "cache" + File.separator + base);
+    return new File[] {new File(out, "etag"), new File(out, "lm"), new File(out, "sum"),
+        tout != null ? tout : new File(out, "file." + ext)};
   }
 
-  private static final String[] REPOS = {"http://repo.maven.apache.org/maven2/",
-      Constants.FORGE_BASE + "maven/", "https://libraries.minecraft.net/"};
-
-  private static File downloadMaven(final String group, final String artifact,
-      final String version, final String sub) throws IOException, NoSuchAlgorithmException {
+  private static Object[] genMPath(final String group, final String artifact, final String version,
+      final String sub) {
     final StringBuilder sb = new StringBuilder();
     sb.append(group.replace(".", "/")).append("/");
     sb.append(artifact).append("/").append(version);
@@ -95,20 +38,93 @@ public class Downloader implements Runnable, IProcessor {
       cp = cp + "-" + sub;
       sb.append(".jar");
     }
-    File f = null;
     final File lp =
         new File(Constants.MINECRAFT_LIBRARIES, sb.toString().replace("/", File.separator));
+    return new Object[] {sb.toString(), genPath(cp, lp, "jar")};
+  }
+
+  private static boolean tryDownload(final URL url, final File[] fa)
+      throws NoSuchAlgorithmException, IOException {
+    final byte[] buf = new byte[8192];
+    int nread;
+    if (!fa[3].exists()) {
+      fa[0].delete();
+      fa[1].delete();
+      fa[2].delete();
+      fa[3].delete();
+    } else if (fa[2].exists()) {
+      final MessageDigest md = MessageDigest.getInstance("SHA-512");
+      final InputStream is = new FileInputStream(fa[3]);
+      while ((nread = is.read(buf)) > -1)
+        md.update(buf, 0, nread);
+      is.close();
+      if (!Arrays.equals(md.digest(), Utils.fileToByteArray(fa[2]))) {
+        fa[0].delete();
+        fa[1].delete();
+        fa[2].delete();
+        fa[3].delete();
+      }
+    }
+    final HttpURLConnection uc = (HttpURLConnection) url.openConnection();
+    uc.setInstanceFollowRedirects(true);
+    if (fa[0].exists())
+      uc.setRequestProperty("If-None-Match", Utils.fileToString(fa[0], Utils.UTF_8));
+    if (fa[1].exists())
+      uc.setRequestProperty("If-Modified-Since", Utils.fileToString(fa[1], Utils.UTF_8));
+    uc.connect();
+    final int res = uc.getResponseCode();
+    if (res == HttpURLConnection.HTTP_NOT_MODIFIED)
+      return true;
+    if (res == HttpURLConnection.HTTP_NOT_FOUND || res == HttpURLConnection.HTTP_FORBIDDEN)
+      return false;
+    if (res != HttpURLConnection.HTTP_OK)
+      throw new FileNotFoundException(String.format("%d %s", Integer.valueOf(res),
+          uc.getResponseMessage()));
+    fa[3].getParentFile().mkdirs();
+    fa[0].getParentFile().mkdirs();
+    if (uc.getHeaderField("ETag") != null)
+      Utils.stringToFile(uc.getHeaderField("ETag"), fa[0], Utils.UTF_8);
+    if (uc.getHeaderField("Last-Modified") != null)
+      Utils.stringToFile(uc.getHeaderField("Last-Modified"), fa[1], Utils.UTF_8);
+    final MessageDigest md = MessageDigest.getInstance("SHA-512");
+    final InputStream is = uc.getInputStream();
+    final OutputStream os = new FileOutputStream(fa[3]);
+    while ((nread = is.read(buf)) > -1) {
+      os.write(buf, 0, nread);
+      md.update(buf, 0, nread);
+    }
+    os.close();
+    is.close();
+    uc.disconnect();
+    Utils.byteArrayToFile(md.digest(), fa[2]);
+    return true;
+  }
+
+  private static final String[] REPOS = {"http://repo.maven.apache.org/maven2/",
+      Constants.FORGE_BASE + "maven/", "https://libraries.minecraft.net/"};
+
+  private static void downloadMaven(final Object[] oa) throws Exception {
+    final ArrayList<Exception> al = new ArrayList<Exception>();
     for (final String base : REPOS) {
-      f = tryDownload(new URL(base + sb.toString()), cp, lp, "jar");
-      if (f != null)
-        break;
+      try {
+        if (!tryDownload(new URL(base + (String) oa[0]), (File[]) oa[1]))
+          continue;
+      } catch (final Exception e) {
+        al.add(e);
+        continue;
+      }
+      return;
     }
-    if (f == null && lp.exists()) {
-      f = lp;
-      System.out.println(">> Use local library cache " + group + ":" + artifact + ":" + version
-          + ":" + sub);
+    if (((File[]) oa[1])[3].exists()) {
+      System.out.println(">> Use local library cache " + (String) oa[0]);
+      return;
     }
-    return f;
+    if (al.isEmpty())
+      return;
+    final StringBuilder sb = new StringBuilder();
+    for (final Exception e : al)
+      sb.append(e.toString()).append(", ");
+    throw new Exception(sb.toString());
   }
 
   private final String name;
@@ -150,15 +166,35 @@ public class Downloader implements Runnable, IProcessor {
 
   @Override
   public void run() {
-    try {
-      if (this.maven != null)
-        this.ret = downloadMaven(this.maven[0], this.maven[1], this.maven[2], this.maven[3]);
-      else if (this.url != null)
-        this.ret = tryDownload(this.url, this.name, this.ret, this.ext);
-    } catch (final Exception e) {
-      System.err.println(toString() + " is failed with " + e.toString());
-      this.ret = null;
+    int remain = 3;
+    Exception le = null;
+    Object[] oa = null;
+    if (this.maven != null) {
+      oa = genMPath(this.maven[0], this.maven[1], this.maven[2], this.maven[3]);
+      this.ret = ((File[]) oa[1])[3];
+    } else if (this.url != null) {
+      oa = genPath(this.name, this.ret, this.ext);
+      this.ret = (File) oa[3];
     }
+    while (remain-- > 0)
+      try {
+        if (this.maven != null)
+          downloadMaven(oa);
+        else if (this.url != null)
+          tryDownload(this.url, (File[]) oa);
+        le = null;
+        break;
+      } catch (final Exception e) {
+        le = e;
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e1) {
+        }
+      }
+    if (le != null)
+      System.err.println(toString() + " is failed with " + le.toString());
+    if (!this.ret.exists())
+      this.ret = null;
   }
 
   @Override
