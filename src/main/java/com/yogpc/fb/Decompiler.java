@@ -60,12 +60,14 @@ public final class Decompiler {
           + "maven/net/minecraftforge/forge/([0-9\\._]+)-([0-9\\._]+)\\.([0-9]+)(?:-[^\\-]+)?/forge-([0-9\\._]+)-([0-9\\._]+)\\.([0-9]+)(?:-[^\\-]+)?-";
   private static final Pattern[] FORGE_PATTERN = {Pattern.compile(PAT_MAV + "src\\.zip"),
       Pattern.compile(PAT_MAV + "userdev\\.jar")};
-  private static final Pattern PAT_IDX = Pattern.compile(PAT_BASE + "minecraftforge//?([^\"]+)");
+  private static final Pattern PAT_IDX = Pattern.compile(PAT_BASE
+      + "maven/net/minecraftforge/forge/index_([^\"]+)\\.html");
 
   static final boolean exec(final String version) throws Exception {
     if (list == null) {
       final Queue<Downloader> l = new LinkedList<Downloader>();
-      l.add(new Downloader("forge_main", Constants.FORGE_BASE + "minecraftforge/", "html"));
+      l.add(new Downloader("forge_main", Constants.FORGE_BASE + "maven/net/minecraftforge/forge/",
+          "html"));
       list = new HashMap<String, Decompiler>();
       Downloader d;
       while ((d = l.poll()) != null) {
@@ -74,11 +76,8 @@ public final class Decompiler {
           continue;
         final String data = Utils.fileToString(f, Utils.UTF_8);
         final Matcher y = PAT_IDX.matcher(data);
-        while (y.find()) {
-          if (y.group(1).endsWith(".css") || y.group(1).endsWith(".html"))
-            continue;
+        while (y.find())
           l.add(new Downloader("forge_" + y.group(1), y.group(), "html"));
-        }
         for (final Pattern p : FORGE_PATTERN) {
           final Matcher z = p.matcher(data);
           while (z.find())
