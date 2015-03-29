@@ -13,11 +13,13 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -66,6 +68,7 @@ public final class Decompiler {
   static final boolean exec(final String version) throws Exception {
     if (list == null) {
       final Queue<Downloader> l = new LinkedList<Downloader>();
+      final Set<String> done = new HashSet<String>();
       l.add(new Downloader("forge_main", Constants.FORGE_BASE + "maven/net/minecraftforge/forge/",
           "html"));
       list = new HashMap<String, Decompiler>();
@@ -76,7 +79,7 @@ public final class Decompiler {
           continue;
         final String data = Utils.fileToString(f, Utils.UTF_8);
         final Matcher y = PAT_IDX.matcher(data);
-        while (y.find())
+        while (y.find() && done.add(y.group()))
           l.add(new Downloader("forge_" + y.group(1), y.group(), "html"));
         for (final Pattern p : FORGE_PATTERN) {
           final Matcher z = p.matcher(data);
