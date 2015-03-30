@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,8 @@ import com.yogpc.fb.fg.FmlCleanup;
 import com.yogpc.fb.map.JarMapping;
 import com.yogpc.fb.map.MappingBuilder;
 import com.yogpc.fb.ml.CompleteMinecraftVersion;
+import com.yogpc.fb.sa.Downloader;
+import com.yogpc.fb.sa.MavenWrapper;
 import com.yogpc.fb.sa.UnifiedDiff;
 import com.yogpc.fb.sa.Utils;
 
@@ -120,7 +123,7 @@ public final class Mapping {
 
   private static final boolean matchMap(final String name, final String base) {
     return name.equals("conf/" + base + ".csv") || name.equals("forge/fml/conf/" + base + ".csv")
-        || name.equals("mappings/" + base + ".csv");
+        || name.equals("mappings/" + base + ".csv") || name.equals(base + ".csv");
   }
 
   private static final void load_patch(final byte[] file, final UnifiedDiff diff)
@@ -188,7 +191,39 @@ public final class Mapping {
     }
   }
 
-  final void load_forge_zip(final File f) throws IOException {
+  private static final Pattern BGM = Pattern.compile("mappings\\s*=\\s*\"([^\"]+)_([^\"_]+)\"");
+
+  final void checkAndLoad(final String url, final String fv, final String mcv, final File fl)
+      throws Exception {
+    final InputStream is = new FileInputStream(fl);
+    final ZipInputStream in = new ZipInputStream(is);
+    ZipEntry entry;
+    String s = null;
+    while ((entry = in.getNextEntry()) != null) {
+      if (entry.getName().equals("build.gradle")) {
+        final byte[] d = Utils.jar_entry(in, entry.getSize());
+        final Matcher m = BGM.matcher(new String(d, Utils.ISO_8859_1));
+        if (m.find())
+          s = "de.oceanlabs.mcp:mcp_" + m.group(1) + ":" + m.group(2) + "-" + mcv + ":zip";
+        break;
+      }
+      in.closeEntry();
+    }
+    in.close();
+    is.close();
+    if (s == null) {
+      load_forge_zip(fl);
+      return;
+    }
+    File f =
+        new Downloader(fv + "ud", url.substring(0, url.length() - 7) + "userdev.jar", "jar")
+            .process(null);
+    load_forge_zip(f);
+    f = MavenWrapper.getLegacy(Arrays.asList(s), fv).get(0);
+    load_forge_zip(f);
+  }
+
+  private final void load_forge_zip(final File f) throws IOException {
     final InputStream is = new FileInputStream(f);
     final ZipInputStream in = new ZipInputStream(is);
     ZipEntry entry;

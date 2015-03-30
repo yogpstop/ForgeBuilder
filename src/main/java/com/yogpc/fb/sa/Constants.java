@@ -3,7 +3,7 @@ package com.yogpc.fb.sa;
 import java.io.File;
 
 public class Constants {
-  public static final String FORGE_BASE = "http://files.minecraftforge.net/";
+  public static final String FORGE_MAVEN = "http://files.minecraftforge.net/maven/";
 
   private static final String osn = System.getProperty("os.name").toLowerCase();
 

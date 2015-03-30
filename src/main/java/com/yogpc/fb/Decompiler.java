@@ -56,20 +56,17 @@ public final class Decompiler {
     fmtr.setDeleteEmptyLinesMode(true);// delete-empty-lines
   }
 
-  private static final String PAT_BASE = "http://files\\.minecraftforge\\.net/";
-  private static final String PAT_MAV =
-      PAT_BASE
-          + "maven/net/minecraftforge/forge/([0-9\\._]+)-([0-9\\._]+)\\.([0-9]+)(?:-[^\\-]+)?/forge-([0-9\\._]+)-([0-9\\._]+)\\.([0-9]+)(?:-[^\\-]+)?-";
-  private static final Pattern[] FORGE_PATTERN = {Pattern.compile(PAT_MAV + "src\\.zip"),
-      Pattern.compile(PAT_MAV + "userdev\\.jar")};
-  private static final Pattern PAT_IDX = Pattern.compile(PAT_BASE
-      + "maven/net/minecraftforge/forge/index_([^\"]+)\\.html");
+  private static final String PAT_BASE =
+      "http://files\\.minecraftforge\\.net/maven/net/minecraftforge/forge/";
+  private static final Pattern FORGE_PATTERN = Pattern.compile(PAT_BASE
+      + "[^/]+/forge-([0-9\\._]+)-[0-9\\._]+\\.([0-9]+)(?:-[^\\-]+)?-src\\.zip");
+  private static final Pattern PAT_IDX = Pattern.compile(PAT_BASE + "index_([^\"]+)\\.html");
 
   static final boolean exec(final String version) throws Exception {
     if (list == null) {
       final Queue<Downloader> l = new LinkedList<Downloader>();
       final Set<String> done = new HashSet<String>();
-      l.add(new Downloader("forge_main", Constants.FORGE_BASE + "maven/net/minecraftforge/forge/",
+      l.add(new Downloader("forge_main", Constants.FORGE_MAVEN + "net/minecraftforge/forge/",
           "html"));
       list = new HashMap<String, Decompiler>();
       Downloader d;
@@ -81,11 +78,9 @@ public final class Decompiler {
         final Matcher y = PAT_IDX.matcher(data);
         while (y.find() && done.add(y.group()))
           l.add(new Downloader("forge_" + y.group(1), y.group(), "html"));
-        for (final Pattern p : FORGE_PATTERN) {
-          final Matcher z = p.matcher(data);
-          while (z.find())
-            list.put(z.group(3), new Decompiler(z.group(3), z.group(), z.group(1)));
-        }
+        final Matcher z = FORGE_PATTERN.matcher(data);
+        while (z.find())
+          list.put(z.group(2), new Decompiler(z.group(2), z.group(), z.group(1)));
       }
       final File cc = new File(Constants.DATA_DIR, "custom.cfg");
       if (cc.isFile()) {
@@ -236,11 +231,9 @@ public final class Decompiler {
     dbg3.delete();
     System.out.println("<<< Start decompile");
     System.out.println("> Start forge zip download");
-    final MCPData md = new MCPData(this.url, this.forgev, this.mmcv);
     final File fzip =
         this.cff != null ? this.cff : new Downloader(this.forgev, this.url, "jar").process(null);
-    this.m.load_forge_zip(fzip);
-    md.patch(this.m.ss);
+    this.m.checkAndLoad(this.url, this.forgev, this.mmcv, fzip);
     this.m.finalyze();
     System.out.println("> Start MCPMerge AccessTransformer MCInjector and SpecialSource");
     final MainTransformer trans = new MainTransformer(this.forgevi, this.m);

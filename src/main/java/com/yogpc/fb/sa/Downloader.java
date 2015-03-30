@@ -101,7 +101,7 @@ public class Downloader implements Runnable, IProcessor {
   }
 
   private static final String[] REPOS = {"http://repo.maven.apache.org/maven2/",
-      Constants.FORGE_BASE + "maven/", "https://libraries.minecraft.net/"};
+      Constants.FORGE_MAVEN, "https://libraries.minecraft.net/"};
 
   private static void downloadMaven(final Object[] oa) throws Exception {
     final ArrayList<Exception> al = new ArrayList<Exception>();
