@@ -199,8 +199,10 @@ public final class Mapping {
     final ZipInputStream in = new ZipInputStream(is);
     ZipEntry entry;
     String s = null;
+    boolean found = false;
     while ((entry = in.getNextEntry()) != null) {
       if (entry.getName().equals("build.gradle")) {
+        found = true;
         final byte[] d = Utils.jar_entry(in, entry.getSize());
         final Matcher m = BGM.matcher(new String(d, Utils.ISO_8859_1));
         if (m.find())
@@ -211,7 +213,7 @@ public final class Mapping {
     }
     in.close();
     is.close();
-    if (s == null) {
+    if (!found) {
       load_forge_zip(fl);
       return;
     }
@@ -219,6 +221,8 @@ public final class Mapping {
         new Downloader(fv + "ud", url.substring(0, url.length() - 7) + "userdev.jar", "jar")
             .process(null);
     load_forge_zip(f);
+    if (s == null)
+      return;
     f = MavenWrapper.getLegacy(Arrays.asList(s), fv).get(0);
     load_forge_zip(f);
   }
