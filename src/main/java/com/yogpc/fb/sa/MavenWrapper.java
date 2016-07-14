@@ -4,8 +4,6 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.yogpc.fb.Deobfuscator;
 
@@ -13,8 +11,6 @@ public class MavenWrapper {
   private final List<IProcessor> jr = new ArrayList<IProcessor>();
   private final List<IProcessor> sc = new ArrayList<IProcessor>();
   private final List<IProcessor> nt = new ArrayList<IProcessor>();
-
-  public static final Pattern lib_nam = Pattern.compile("([^:]+):([^:]+):([^:]+)(?::([^:]+))?");
 
   public void addDownload(final List<String> l, final boolean src, final boolean nat,
       final String fv) throws MalformedURLException {
@@ -26,14 +22,14 @@ public class MavenWrapper {
       for (final String p : pl) {
         final int i = p.indexOf('`');
         if (i < 0) {
-          final Matcher m = lib_nam.matcher(p);
-          m.matches();
-          final String g = m.group(1), a = m.group(2), v = m.group(3);
-          n = new Downloader(g, a, v, m.group(4));
+          final String[] m = Utils.split(p, ':');
+          n =
+              new Downloader(m[0], m[1], m[2], m.length > 3 ? m[3] : null, m.length > 4 ? m[4]
+                  : null);
           if (src)
-            this.sc.add(new Downloader(g, a, v, "sources"));
+            this.sc.add(new Downloader(m[0], m[1], m[2], "sources", null));
           if (nat)
-            this.nt.add(new Downloader(g, a, v, "natives-" + Constants.OS));
+            this.nt.add(new Downloader(m[0], m[1], m[2], "natives-" + Constants.OS, null));
         } else {
           final String pr = p.substring(0, i);
           final String u = p.substring(i + 1);

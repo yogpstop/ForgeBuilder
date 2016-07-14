@@ -10,8 +10,11 @@ script:
     - java -jar target/*.jar com.yogpc.fb.ForgeData ${FORGE_VERSION}
 env:
     matrix:
-        # ForgeGradle 1.2 1.8
-        - FORGE_VERSION='1339'
+        # ForgeGradle 2.0 1.8
+        - FORGE_VERSION='1577'
+        - FORGE_VERSION='1503'
+        # ForgeGradle 1.2
+        - FORGE_VERSION='1502'
         - FORGE_VERSION='1238'
         #                 1.7.10
         - FORGE_VERSION='1340'

@@ -59,11 +59,12 @@ public final class Decompiler {
   private static final String PAT_BASE =
       "http://files\\.minecraftforge\\.net/maven/net/minecraftforge/forge/";
   private static final Pattern FORGE_PATTERN = Pattern.compile(PAT_BASE
-      + "[^/]+/forge-([0-9\\._]+)-[0-9\\._]+\\.([0-9]+)(?:-[^\\-]+)?-src\\.zip");
+      + "[^/]+/forge-([0-9\\._]+)-[0-9\\._]+\\.([0-9]+)(?:-[^\\-]+)?-(?:mdk|src)\\.zip");
   private static final Pattern PAT_IDX = Pattern.compile(PAT_BASE + "index_([^\"]+)\\.html");
 
   static final boolean exec(final String version) throws Exception {
     if (list == null) {
+      System.out.println("> Updating forge indexes");
       final Queue<Downloader> l = new LinkedList<Downloader>();
       final Set<String> done = new HashSet<String>();
       l.add(new Downloader("forge_main", Constants.FORGE_MAVEN + "net/minecraftforge/forge/",
@@ -76,8 +77,9 @@ public final class Decompiler {
           continue;
         final String data = Utils.fileToString(f, Utils.UTF_8);
         final Matcher y = PAT_IDX.matcher(data);
-        while (y.find() && done.add(y.group()))
-          l.add(new Downloader("forge_" + y.group(1), y.group(), "html"));
+        while (y.find())
+          if (done.add(y.group()))
+            l.add(new Downloader("forge_" + y.group(1), y.group(), "html"));
         final Matcher z = FORGE_PATTERN.matcher(data);
         while (z.find())
           list.put(z.group(2), new Decompiler(z.group(2), z.group(), z.group(1)));

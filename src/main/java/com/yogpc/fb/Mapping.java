@@ -10,7 +10,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +22,10 @@ import java.util.zip.ZipInputStream;
 import org.objectweb.asm.commons.Remapper;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.yogpc.fb.fg.FmlCleanup;
 import com.yogpc.fb.map.JarMapping;
 import com.yogpc.fb.map.MappingBuilder;
@@ -126,6 +127,11 @@ public final class Mapping {
         || name.equals("mappings/" + base + ".csv") || name.equals(base + ".csv");
   }
 
+  private static final boolean matchSrgExc(final String name, final String ext) {
+    return name.endsWith(ext)
+        && (name.startsWith("conf/") || name.startsWith("forge/fml/conf/") || name.indexOf('/') == -1);
+  }
+
   private static final void load_patch(final byte[] file, final UnifiedDiff diff)
       throws IOException {
     final InputStream fis = new ByteArrayInputStream(file);
@@ -145,6 +151,19 @@ public final class Mapping {
     while ((entry = in.getNextEntry()) != null) {
       if (!entry.isDirectory())
         load_patch(Utils.jar_entry(in, entry.getSize()), diff);
+      in.closeEntry();
+    }
+    in.close();
+    is.close();
+  }
+
+  private final void load_zip_source(final byte[] jar) throws IOException {
+    final InputStream is = new ByteArrayInputStream(jar);
+    final ZipInputStream in = new ZipInputStream(is);
+    ZipEntry entry;
+    while ((entry = in.getNextEntry()) != null) {
+      if (!entry.isDirectory())
+        load_file(entry.getName(), Utils.jar_entry(in, entry.getSize()));
       in.closeEntry();
     }
     in.close();
@@ -191,14 +210,36 @@ public final class Mapping {
     }
   }
 
-  private static final Pattern BGM = Pattern.compile("mappings\\s*=\\s*\"([^\"]+)_([^\"_]+)\"");
+  private static final void check_mcpbot(final String mcv, final String ch, final String ver,
+      final List<String> out) throws Exception {
+    final JsonPrimitive pver = new JsonPrimitive(Long.valueOf(ver));
+    final int idx = ch.indexOf('_');
+    final String chb = idx >= 0 ? ch.substring(0, idx) : ch;
+    final JsonObject root =
+        new JsonParser().parse(
+            Utils.fileToString(new Downloader("mcpbot_versions",
+                "http://export.mcpbot.bspk.rs/versions.json", "json").process(null),
+                Utils.ISO_8859_1)).getAsJsonObject();
+    final JsonElement je = root.get(mcv);
+    if (je != null && je.getAsJsonArray().contains(pver)) {
+      out.add("de.oceanlabs.mcp:mcp_" + ch + ":" + ver + "-" + mcv + ":zip");
+      return;
+    }
+    for (final Map.Entry<String, JsonElement> e : root.entrySet())
+      if (e.getValue().getAsJsonObject().getAsJsonArray(chb).contains(pver)) {
+        out.add("de.oceanlabs.mcp:mcp_" + ch + ":" + ver + "-" + e.getKey() + ":zip");
+        break;
+      }
+  }
+
+  private static final Pattern BGM = Pattern.compile("mappings\\s*=\\s*\"([^\"]+)_(\\d+)\"");
 
   final void checkAndLoad(final String url, final String fv, final String mcv, final File fl)
       throws Exception {
     final InputStream is = new FileInputStream(fl);
     final ZipInputStream in = new ZipInputStream(is);
     ZipEntry entry;
-    String s = null;
+    final List<String> s = new ArrayList<String>(2);
     boolean found = false;
     while ((entry = in.getNextEntry()) != null) {
       if (entry.getName().equals("build.gradle")) {
@@ -206,7 +247,7 @@ public final class Mapping {
         final byte[] d = Utils.jar_entry(in, entry.getSize());
         final Matcher m = BGM.matcher(new String(d, Utils.ISO_8859_1));
         if (m.find())
-          s = "de.oceanlabs.mcp:mcp_" + m.group(1) + ":" + m.group(2) + "-" + mcv + ":zip";
+          check_mcpbot(mcv, m.group(1), m.group(2), s);
         break;
       }
       in.closeEntry();
@@ -217,14 +258,16 @@ public final class Mapping {
       load_forge_zip(fl);
       return;
     }
-    File f =
+    final File f =
         new Downloader(fv + "ud", url.substring(0, url.length() - 7) + "userdev.jar", "jar")
             .process(null);
     load_forge_zip(f);
-    if (s == null)
+    if (s.size() < 1)
       return;
-    f = MavenWrapper.getLegacy(Arrays.asList(s), fv).get(0);
-    load_forge_zip(f);
+    if (Utils.atoi(fv, 0) >= 1503)
+      s.add("de.oceanlabs.mcp:mcp:" + mcv + ":srg:zip");
+    for (final File lf : MavenWrapper.getLegacy(s, fv))
+      load_forge_zip(lf);
   }
 
   private final void load_forge_zip(final File f) throws IOException {
@@ -245,12 +288,14 @@ public final class Mapping {
           MappingBuilder.loadCsv(new String(d, Utils.ISO_8859_1), this.ss, true, false);
         else if (matchMap(n, "fields"))
           MappingBuilder.loadCsv(new String(d, Utils.ISO_8859_1), this.ss, true, false);
-        else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.endsWith(".srg"))
+        else if (matchSrgExc(n, ".srg"))
           MappingBuilder.loadSrg(new String(d, Utils.ISO_8859_1), this.ss);
         else if (n.equals("yogpstop/srg"))// TODO my tweaks
           MappingBuilder.loadNew(new String(d, Utils.ISO_8859_1), this.ss, true);
         else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.contains(".patch")
             && !n.contains("minecraft_server_ff"))
+          loadFFPatch(n, d);
+        else if (n.startsWith("patches/minecraft_merged_ff/") && n.contains(".patch"))
           loadFFPatch(n, d);
         else if (n.startsWith("forge/fml/patches/minecraft/")
             || n.startsWith("forge/fml/patches/common/"))
@@ -265,15 +310,17 @@ public final class Mapping {
           load_file(n.substring(14), d);
         else if (n.startsWith("src/main/resources/"))
           load_file(n.substring(19), d);
+        else if (n.equals("sources.zip") || n.equals("resources.zip"))
+          load_zip_source(d);
         else if (n.equals("fmlpatches.zip"))
           load_zip_patch(d, this.fml_patches);
-        else if (n.equals("forgepatches.zip"))
+        else if (n.equals("forgepatches.zip") || n.equals("patches.zip"))
           load_zip_patch(d, this.forge_patches);
         else if (n.equals("forge/fml/fml.json"))
           loadJson(d);
         else if (n.equals("dev.json"))
           loadJson(d);
-        else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.endsWith(".exc"))
+        else if (matchSrgExc(n, ".exc"))
           this.local_mci_buf = d;
         else if (n.endsWith("/mcp_merge.cfg"))
           this.merge_buf = new String(d, Utils.UTF_8).split("(\r\n|\r|\n)");

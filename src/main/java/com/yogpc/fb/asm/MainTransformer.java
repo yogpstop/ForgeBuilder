@@ -49,9 +49,22 @@ public class MainTransformer {
       this.ss = m.ss;
       this.lt = new LVTTransformer(this.ops, m.gradle);
       this.st = new SideTransformer(m.side_path, m.sideonly_path, this.ops);
-      this.ops.loadAT(m.sources.get("fml_at.cfg"));
+      final byte[] fmlat = m.sources.get("fml_at.cfg");
+      if (fmlat != null)
+        this.ops.loadAT(fmlat);
       this.ops.loadAT(m.sources.get("forge_at.cfg"));
-      this.ops.loadMerge(m.merge_buf);
+      if (m.merge_buf == null) { // fvi >= 1503
+        this.ops.dontProcess.put("org/bouncycastle", Utils.DUMMY_OBJECT);
+        this.ops.dontProcess.put("org/apache", Utils.DUMMY_OBJECT);
+        this.ops.dontProcess.put("com/google", Utils.DUMMY_OBJECT);
+        this.ops.dontProcess.put("com/mojang/authlib", Utils.DUMMY_OBJECT);
+        this.ops.dontProcess.put("com/mojang/util", Utils.DUMMY_OBJECT);
+        this.ops.dontProcess.put("gnu/trove", Utils.DUMMY_OBJECT);
+        this.ops.dontProcess.put("io/netty", Utils.DUMMY_OBJECT);
+        this.ops.dontProcess.put("javax/annotation", Utils.DUMMY_OBJECT);
+        this.ops.dontProcess.put("argo", Utils.DUMMY_OBJECT);
+      } else
+        this.ops.loadMerge(m.merge_buf);
       this.ops.loadMap(m.mci_cfg);
       if (m.json_buf != null)
         this.ops.loadJson(m.json_buf);

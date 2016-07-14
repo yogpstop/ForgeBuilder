@@ -18,7 +18,6 @@ public class Bootstrap {
         Arrays.asList(new String[] {"org.ow2.asm:asm-all:4.2",
             "com.github.abrarsyed.jastyle:jAstyle:1.2", "com.google.code.gson:gson:2.3"}), null))
       addURL.invoke(cl, f.toURI().toURL());
-    System.out.println("> Downloading is done.");
     String main;
     String[] par;
     if (args.length < 1 || !args[0].startsWith("com.yogpc.fb.")) {

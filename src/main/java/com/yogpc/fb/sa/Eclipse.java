@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Matcher;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,15 +20,22 @@ import com.yogpc.fb.ForgeData;
 
 public class Eclipse {
   private static String getPath(final String group, final String artifact, final String version,
-      final String sub) {
+      final String sub, final String ext) {
     final StringBuilder sb = new StringBuilder();
     sb.append(group.replace(".", "/")).append("/");
     sb.append(artifact).append("/");
     sb.append(version).append("/");
     sb.append(artifact).append('-').append(version);
+    String vext = ext;
     if (sub != null)
-      sb.append('-').append(sub);
-    sb.append(".jar");
+      if (sub.equals("jar") || sub.equals("zip"))
+        vext = sub;
+      else if (sub.length() > 0)
+        sb.append('-').append(sub);
+    if (vext != null)
+      sb.append('.').append(vext);
+    else
+      sb.append(".jar");
     return sb.toString();
   }
 
@@ -61,10 +67,11 @@ public class Eclipse {
     for (final String p : pl) {
       final int i = p.indexOf('`');
       if (i < 0) {
-        final Matcher m = MavenWrapper.lib_nam.matcher(l);
-        m.matches();
-        lib = getPath(m.group(1), m.group(2), m.group(3), m.group(4));
-        source = getPath(m.group(1), m.group(2), m.group(3), "sources");
+        final String[] mvn = Utils.split(l, ':');
+        lib =
+            getPath(mvn[0], mvn[1], mvn[2], mvn.length > 3 ? mvn[3] : null, mvn.length > 4 ? mvn[4]
+                : null);
+        source = getPath(mvn[0], mvn[1], mvn[2], "sources", null);
       } else {
         final String pr = p.substring(0, i);
         final String u = p.substring(i + 1);

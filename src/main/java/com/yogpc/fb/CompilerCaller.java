@@ -167,7 +167,9 @@ public final class CompilerCaller {
     for (final ForgeVersion fv : q) {
       System.out.print("<< Start compile of ");
       System.out.println(fv.name == null ? fv.forgev : fv.name);
-      final boolean ecl = (fv.name == null ? fv.forgev : fv.name).equals(eclipse);
+      final boolean ecl =
+          (fv.name == null ? fv.forgev : fv.name).equals(eclipse) || pc.forge.size() == 1
+              && eclipse != null && eclipse.length() == 0;
       final MavenWrapper w1 = new MavenWrapper(), w2 = new MavenWrapper();
       System.out.println("> Load sources and resources");
       final boolean loaded = loadAll(base, pc, fv, patches, debug.contains(fv) || ecl);

@@ -23,21 +23,24 @@ public class Downloader implements Runnable, IProcessor {
   }
 
   private static Object[] genMPath(final String group, final String artifact, final String version,
-      final String sub) {
+      final String sub, final String ext) {
     final StringBuilder sb = new StringBuilder();
     sb.append(group.replace(".", "/")).append("/");
     sb.append(artifact).append("/").append(version);
     String cp = sb.toString();
     sb.append("/").append(artifact).append('-').append(version);
-    if (sub == null || sub.equals("jar"))
+    String vext = ext;
+    if (sub != null)
+      if (sub.equals("jar") || sub.equals("zip"))
+        vext = sub;
+      else if (sub.length() > 0) {
+        sb.append('-').append(sub);
+        cp = cp + "-" + sub;
+      }
+    if (vext != null)
+      sb.append('.').append(vext);
+    else
       sb.append(".jar");
-    else if (sub.equals("zip"))
-      sb.append(".zip");
-    else {
-      sb.append('-').append(sub);
-      cp = cp + "-" + sub;
-      sb.append(".jar");
-    }
     final File lp =
         new File(Constants.MINECRAFT_LIBRARIES, sb.toString().replace("/", File.separator));
     return new Object[] {sb.toString(), genPath(cp, lp, "jar")};
@@ -134,9 +137,9 @@ public class Downloader implements Runnable, IProcessor {
   private final Thread t;
   private File ret;
 
-  Downloader(final String g, final String a, final String v, final String s) {
+  Downloader(final String g, final String a, final String v, final String s, final String e) {
     this.name = null;
-    this.maven = new String[] {g, a, v, s};
+    this.maven = new String[] {g, a, v, s, e};
     this.url = null;
     this.ret = null;
     this.ext = null;
@@ -170,7 +173,7 @@ public class Downloader implements Runnable, IProcessor {
     Exception le = null;
     Object[] oa = null;
     if (this.maven != null) {
-      oa = genMPath(this.maven[0], this.maven[1], this.maven[2], this.maven[3]);
+      oa = genMPath(this.maven[0], this.maven[1], this.maven[2], this.maven[3], this.maven[4]);
       this.ret = ((File[]) oa[1])[3];
     } else if (this.url != null) {
       oa = genPath(this.name, this.ret, this.ext);
@@ -201,7 +204,7 @@ public class Downloader implements Runnable, IProcessor {
   public String toString() {
     return "Downloader{"
         + (this.maven != null ? this.maven[0] + ":" + this.maven[1] + ":" + this.maven[2] + ":"
-            + this.maven[3] : this.url.toString()) + "}";
+            + this.maven[3] + ":" + this.maven[4] : this.url.toString()) + "}";
   }
 
   private IProcessor child;

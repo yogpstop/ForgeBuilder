@@ -56,8 +56,11 @@ public class ForgeData {
 
   // For debug
   private static final String[] DEFAULTS = {
+      // ForgeGradle 2.0
+      "1577",// 1.8
+      "1503",// 1.8
       // ForgeGradle 1.2
-      "1339",// 1.8
+      "1502",// 1.8
       "1238",// 1.8
       "1340",// 1.7.10
       "1208",// 1.7.10
