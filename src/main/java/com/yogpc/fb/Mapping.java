@@ -220,11 +220,6 @@ public final class Mapping {
             Utils.fileToString(new Downloader("mcpbot_versions",
                 "http://export.mcpbot.bspk.rs/versions.json", "json").process(null),
                 Utils.ISO_8859_1)).getAsJsonObject();
-    final JsonElement je = root.get(mcv);
-    if (je != null && je.getAsJsonArray().contains(pver)) {
-      out.add("de.oceanlabs.mcp:mcp_" + ch + ":" + ver + "-" + mcv + ":zip");
-      return;
-    }
     for (final Map.Entry<String, JsonElement> e : root.entrySet())
       if (e.getValue().getAsJsonObject().getAsJsonArray(chb).contains(pver)) {
         out.add("de.oceanlabs.mcp:mcp_" + ch + ":" + ver + "-" + e.getKey() + ":zip");
