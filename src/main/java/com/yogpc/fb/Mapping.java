@@ -30,6 +30,7 @@ import com.yogpc.fb.fg.FmlCleanup;
 import com.yogpc.fb.map.JarMapping;
 import com.yogpc.fb.map.MappingBuilder;
 import com.yogpc.fb.ml.CompleteMinecraftVersion;
+import com.yogpc.fb.sa.Constants;
 import com.yogpc.fb.sa.Downloader;
 import com.yogpc.fb.sa.MavenWrapper;
 import com.yogpc.fb.sa.UnifiedDiff;
@@ -65,7 +66,7 @@ public final class Mapping {
   public JsonObject json_buf;
   private byte[] local_mci_buf, local_fmlpy_buf;
   public boolean gradle;
-  public String side_path, sideonly_path;
+  public String sidePath;
 
   private final void buildJavadoc(final String indent, final String name, final boolean isMethod,
       final List<String> dest, final int forgevi, final boolean force) {
@@ -229,7 +230,7 @@ public final class Mapping {
 
   private static final Pattern BGM = Pattern.compile("mappings\\s*=\\s*\"([^\"]+)_(\\d+)\"");
 
-  final void checkAndLoad(final String url, final String fv, final String mcv, final File fl)
+  final void checkAndLoad(final String url, final String fv, final int fvi, final String mcv, final File fl)
       throws Exception {
     final InputStream is = new FileInputStream(fl);
     final ZipInputStream in = new ZipInputStream(is);
@@ -250,22 +251,22 @@ public final class Mapping {
     in.close();
     is.close();
     if (!found) {
-      load_forge_zip(fl);
+      load_forge_zip(fl, fvi);
       return;
     }
     final File f =
         new Downloader(fv + "ud", url.substring(0, url.length() - 7) + "userdev.jar", "jar")
             .process(null);
-    load_forge_zip(f);
+    load_forge_zip(f, fvi);
     if (s.size() < 1)
       return;
-    if (Utils.atoi(fv, 0) >= 1503)
+    if (fvi >= 1503)
       s.add("de.oceanlabs.mcp:mcp:" + mcv + ":srg:zip");
     for (final File lf : MavenWrapper.getLegacy(s, fv))
-      load_forge_zip(lf);
+      load_forge_zip(lf, fvi);
   }
 
-  private final void load_forge_zip(final File f) throws IOException {
+  private final void load_forge_zip(final File f, final int fvi) throws IOException {
     final InputStream is = new FileInputStream(f);
     final ZipInputStream in = new ZipInputStream(is);
     ZipEntry entry;
@@ -289,9 +290,9 @@ public final class Mapping {
           MappingBuilder.loadNew(new String(d, Utils.ISO_8859_1), this.ss, true);
         else if ((n.startsWith("conf/") || n.startsWith("forge/fml/conf/")) && n.contains(".patch")
             && !n.contains("minecraft_server_ff"))
-          loadFFPatch(n, d);
+          loadFFPatch(n, d, fvi);
         else if (n.startsWith("patches/minecraft_merged_ff/") && n.contains(".patch"))
-          loadFFPatch(n, d);
+          loadFFPatch(n, d, fvi);
         else if (n.startsWith("forge/fml/patches/minecraft/")
             || n.startsWith("forge/fml/patches/common/"))
           load_patch(d, this.fml_patches);
@@ -321,7 +322,7 @@ public final class Mapping {
           this.merge_buf = new String(d, Utils.UTF_8).split("(\r\n|\r|\n)");
         else if (n.equals("forge/fml/fml.py"))
           this.local_fmlpy_buf = d;
-        else if (n.equals("conf/exceptor.json"))
+        else if (n.equals("conf/exceptor.json") || n.equals("exceptor.json"))
           this.json_buf = (JsonObject) new JsonParser().parse(new String(d));
       }
       in.closeEntry();
@@ -331,6 +332,13 @@ public final class Mapping {
   }
 
   final void finalyze() throws IOException {
+    if (sidePath == null)
+      sidePath = Constants.DEFAULT_SIDE_PATH;
+    if (!this.sources.containsKey(sidePath + "/Side.java"))
+      this.sources.put(sidePath + "/Side.java", Utils.jar_entry(Mapping.class.getResourceAsStream("/Side.java"), -1));
+    if (!this.sources.containsKey(sidePath + "/SideOnly.java"))
+      this.sources.put(sidePath + "/SideOnly.java", Utils.jar_entry(Mapping.class.getResourceAsStream("/SideOnly.java"), -1));
+    // //////////////////////////////////////////////////////////////
     this.gradle = this.local_fmlpy_buf == null;
     if (this.json == null && this.local_fmlpy_buf != null)
       generateJson();
@@ -423,8 +431,11 @@ public final class Mapping {
     r.close();
   }
 
-  private final void loadFFPatch(final String name, final byte[] patch) {
+  private final void loadFFPatch(final String name, final byte[] patch, final int fvi) {
+    // FIXME may duplicate class name?
     final String s = name.substring(name.lastIndexOf('/') + 1, name.lastIndexOf(".patch"));
+    if (fvi >= 1503 && s.contains("Enum")) // acb3b85d25d-adebc409202 FIXME finish at?
+      return;
     List<String> l = this.ff_patch.get(s);
     if (l == null)
       this.ff_patch.put(s, l = new ArrayList<String>());
@@ -432,10 +443,8 @@ public final class Mapping {
   }
 
   private final void load_file(final String name, final byte[] data) {
-    if (name.endsWith("/Side.java"))
-      this.side_path = name.substring(0, name.length() - 5);
-    if (name.endsWith("/SideOnly.java"))
-      this.sideonly_path = name.substring(0, name.length() - 5);
+    if (name.endsWith("/Side.java") || name.endsWith("/SideOnly.java"))
+      this.sidePath = name.substring(0, name.lastIndexOf('/'));
     this.sources.put(name, data);
   }
 }

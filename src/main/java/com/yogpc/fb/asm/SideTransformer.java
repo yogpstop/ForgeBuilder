@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.yogpc.fb.sa.Constants;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -13,21 +14,22 @@ import org.objectweb.asm.tree.MethodNode;
 
 public class SideTransformer {
   private final TransformRule ops;
-  private final String side;
-  private final String sideonly;
+  private final AnnotationNode clientNode;
+  private final AnnotationNode serverNode;
 
-  SideTransformer(final String s, final String so, final TransformRule m) {
-    this.side = "L" + s + ";";
-    this.sideonly = "L" + so + ";";
+  SideTransformer(String sidePath, TransformRule m) {
+    // TODO old version cpw.mods.fml
+    if (sidePath == null)
+      sidePath = Constants.DEFAULT_SIDE_PATH;
+    this.clientNode = new AnnotationNode("L" + sidePath + "/SideOnly;");
+    this.clientNode.values = new ArrayList<Object>();
+    this.clientNode.values.add("value");
+    this.clientNode.values.add(new String[] {"L" + sidePath + "/Side;", "CLIENT"});
+    this.serverNode = new AnnotationNode("L" + sidePath + "/SideOnly;");
+    this.serverNode.values = new ArrayList<Object>();
+    this.serverNode.values.add("value");
+    this.serverNode.values.add(new String[] {"L" + sidePath + "/Side;", "SERVER"});
     this.ops = m;
-  }
-
-  private AnnotationNode getSideAnn(final boolean cli) {
-    final AnnotationNode ann = new AnnotationNode(this.sideonly);
-    ann.values = new ArrayList<Object>();
-    ann.values.add("value");
-    ann.values.add(new String[] {this.side, cli ? "CLIENT" : "SERVER"});
-    return ann;
   }
 
   private <T> T get_sideonly(final T cls, final boolean cli) {
@@ -35,19 +37,19 @@ public class SideTransformer {
       final FieldNode node = (FieldNode) cls;
       if (node.visibleAnnotations == null)
         node.visibleAnnotations = new ArrayList<AnnotationNode>();
-      node.visibleAnnotations.add(getSideAnn(cli));
+      node.visibleAnnotations.add(cli ? clientNode : serverNode);
     } else if (cls instanceof MethodNode) {
       final MethodNode node = (MethodNode) cls;
       if (node.visibleAnnotations == null)
         node.visibleAnnotations = new ArrayList<AnnotationNode>();
-      node.visibleAnnotations.add(getSideAnn(cli));
+      node.visibleAnnotations.add(cli ? clientNode : serverNode);
     } else if (cls instanceof ClassNode) {
       final ClassNode node = (ClassNode) cls;
       if (this.ops.dont_annotate(node.name, cli))
         return cls;
       if (node.visibleAnnotations == null)
         node.visibleAnnotations = new ArrayList<AnnotationNode>();
-      node.visibleAnnotations.add(getSideAnn(cli));
+      node.visibleAnnotations.add(cli ? clientNode : serverNode);
     }
     return cls;
   }

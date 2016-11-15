@@ -245,6 +245,7 @@ public final class UnifiedDiff {
   }
 
   private static void writeDebug(final Map<String, String> in, final File base) throws IOException {
+    Utils.rm(base);
     File out;
     for (final Map.Entry<String, String> e : in.entrySet()) {
       out = new File(base, e.getKey().replace('/', File.separatorChar));

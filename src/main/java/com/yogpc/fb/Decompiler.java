@@ -131,9 +131,7 @@ public final class Decompiler {
     tmp.delete();
     tmp.mkdir();
     final File ffjar = File.createTempFile("ForgeBuilder", ".jar");
-    Utils.byteArrayToFile(
-        Utils.urlToByteArray(Decompiler.class.getResource(this.forgevi < 1048 ? "/f4" : "/f3")),
-        ffjar);
+    Utils.resourceToFile(this.forgevi < 1048 ? "/f4" : "/f3", ffjar);
     final List<String> l = new LinkedList<String>();
     l.add("java");
     l.add("-Xms2G");
@@ -228,14 +226,11 @@ public final class Decompiler {
     final File dbg2 = new File(dbg1, "to");
     final File dbg3 = new File(dbg1, "rej");
     dbg1 = new File(dbg1, "from");
-    dbg1.delete();
-    dbg2.delete();
-    dbg3.delete();
-    System.out.println("<<< Start decompile");
+    System.out.println("<<< Start decompile of " + this.forgev);
     System.out.println("> Start forge zip download");
     final File fzip =
         this.cff != null ? this.cff : new Downloader(this.forgev, this.url, "jar").process(null);
-    this.m.checkAndLoad(this.url, this.forgev, this.mmcv, fzip);
+    this.m.checkAndLoad(this.url, this.forgev, this.forgevi, this.mmcv, fzip);
     this.m.finalyze();
     System.out.println("> Start MCPMerge AccessTransformer MCInjector and SpecialSource");
     final MainTransformer trans = new MainTransformer(this.forgevi, this.m);

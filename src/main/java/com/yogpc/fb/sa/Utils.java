@@ -7,7 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,14 +62,15 @@ public final class Utils {
     i.delete();
   }
 
-  public static byte[] urlToByteArray(final URL l) throws IOException {
-    final InputStream is = l.openStream();
-    final byte[] ret = new byte[is.available()];
-    int p = 0;
-    while (p < ret.length)
-      p += is.read(ret, p, ret.length - p);
+  public static void resourceToFile(final String resName, final File out) throws IOException {
+    final InputStream is = Utils.class.getResourceAsStream(resName);
+    final OutputStream os = new FileOutputStream(out);
+    byte[] buffer = new byte[4096];
+    int len;
+    while ((len = is.read(buffer)) != -1)
+      os.write(buffer, 0, len);
+    os.close();
     is.close();
-    return ret;
   }
 
   public static byte[] fileToByteArray(final File f) throws IOException {
