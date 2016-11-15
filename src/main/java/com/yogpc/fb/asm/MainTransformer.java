@@ -48,7 +48,7 @@ public class MainTransformer {
       final Mapping m = (Mapping) o;
       this.ss = m.ss;
       this.lt = new LVTTransformer(this.ops, m.gradle);
-      this.st = new SideTransformer(m.sidePath, this.ops);
+      this.st = new SideTransformer(m.urlSide, m.urlSideOnly, this.ops);
       final byte[] fmlat = m.sources.get("fml_at.cfg");
       if (fmlat != null)
         this.ops.loadAT(fmlat);
@@ -75,7 +75,7 @@ public class MainTransformer {
     } else {
       this.ss = null;
       this.lt = null;
-      this.st = new SideTransformer(null, this.ops);
+      this.st = new SideTransformer(null, null, this.ops);
     }
   }
 

@@ -16,10 +16,7 @@ env:
         #                 1.8.8
         - FORGE_VERSION='1655'
         - FORGE_VERSION='1583'
-        # ForgeGradle 2.0
-        - FORGE_VERSION='1582'
-        - FORGE_VERSION='1575'
-        #                 1.8
+        # ForgeGradle 2.0 1.8
         - FORGE_VERSION='1577'
         - FORGE_VERSION='1503'
         # ForgeGradle 1.2
@@ -58,6 +55,11 @@ env:
         - FORGE_VERSION='187'
         - FORGE_VERSION='183'
 matrix:
+    allow_failures:
+    - env: FORGE_VERSION='1902'
+    - env: FORGE_VERSION='1656'
+    - env: FORGE_VERSION='1655'
+    - env: FORGE_VERSION='1583'
     exclude:
         - env: FORGE_VERSION='1047'
           jdk: oraclejdk8

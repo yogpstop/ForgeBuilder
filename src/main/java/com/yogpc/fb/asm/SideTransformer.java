@@ -17,18 +17,20 @@ public class SideTransformer {
   private final AnnotationNode clientNode;
   private final AnnotationNode serverNode;
 
-  SideTransformer(String sidePath, TransformRule m) {
+  SideTransformer(String side, String sideOnly, TransformRule m) {
     // TODO old version cpw.mods.fml
-    if (sidePath == null)
-      sidePath = Constants.DEFAULT_SIDE_PATH;
-    this.clientNode = new AnnotationNode("L" + sidePath + "/SideOnly;");
+    if (side == null)
+      side = Constants.DEFAULT_SIDE_PATH + "/Side";
+    if (sideOnly == null)
+      sideOnly = Constants.DEFAULT_SIDE_PATH + "/SideOnly";
+    this.clientNode = new AnnotationNode("L" + sideOnly + ";");
     this.clientNode.values = new ArrayList<Object>();
     this.clientNode.values.add("value");
-    this.clientNode.values.add(new String[] {"L" + sidePath + "/Side;", "CLIENT"});
-    this.serverNode = new AnnotationNode("L" + sidePath + "/SideOnly;");
+    this.clientNode.values.add(new String[] {"L" + side + ";", "CLIENT"});
+    this.serverNode = new AnnotationNode("L" + sideOnly + ";");
     this.serverNode.values = new ArrayList<Object>();
     this.serverNode.values.add("value");
-    this.serverNode.values.add(new String[] {"L" + sidePath + "/Side;", "SERVER"});
+    this.serverNode.values.add(new String[] {"L" + side + ";", "SERVER"});
     this.ops = m;
   }
 

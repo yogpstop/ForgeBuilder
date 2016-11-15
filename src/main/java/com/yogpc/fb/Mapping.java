@@ -62,11 +62,13 @@ public final class Mapping {
   final Map<String, List<String>> ff_patch = new HashMap<String, List<String>>();
   CompleteMinecraftVersion json;
   public String[] merge_buf;
+  String astyle_conf;
   public final Properties mci_cfg = new Properties();
   public JsonObject json_buf;
   private byte[] local_mci_buf, local_fmlpy_buf;
   public boolean gradle;
-  public String sidePath;
+  public String urlSide;
+  public String urlSideOnly;
 
   private final void buildJavadoc(final String indent, final String name, final boolean isMethod,
       final List<String> dest, final int forgevi, final boolean force) {
@@ -324,6 +326,8 @@ public final class Mapping {
           this.local_fmlpy_buf = d;
         else if (n.equals("conf/exceptor.json") || n.equals("exceptor.json"))
           this.json_buf = (JsonObject) new JsonParser().parse(new String(d));
+        else if (n.equals("forge/fml/conf/astyle.cfg") || n.equals("conf/astyle.cfg") || n.equals("astyle.cfg"))
+          this.astyle_conf = new String(d, Utils.ISO_8859_1);
       }
       in.closeEntry();
     }
@@ -332,12 +336,14 @@ public final class Mapping {
   }
 
   final void finalyze() throws IOException {
-    if (sidePath == null)
-      sidePath = Constants.DEFAULT_SIDE_PATH;
-    if (!this.sources.containsKey(sidePath + "/Side.java"))
-      this.sources.put(sidePath + "/Side.java", Utils.jar_entry(Mapping.class.getResourceAsStream("/Side.java"), -1));
-    if (!this.sources.containsKey(sidePath + "/SideOnly.java"))
-      this.sources.put(sidePath + "/SideOnly.java", Utils.jar_entry(Mapping.class.getResourceAsStream("/SideOnly.java"), -1));
+    if (urlSide == null)
+      urlSide = Constants.DEFAULT_SIDE_PATH + "/Side";
+    if (!this.sources.containsKey(urlSide + ".java"))
+      this.sources.put(urlSide + ".java", Utils.jar_entry(Mapping.class.getResourceAsStream("/Side.java"), -1));
+    if (urlSideOnly == null)
+      urlSideOnly = Constants.DEFAULT_SIDE_PATH + "/SideOnly";
+    if (!this.sources.containsKey(urlSideOnly + ".java"))
+      this.sources.put(urlSideOnly + ".java", Utils.jar_entry(Mapping.class.getResourceAsStream("/SideOnly.java"), -1));
     // //////////////////////////////////////////////////////////////
     this.gradle = this.local_fmlpy_buf == null;
     if (this.json == null && this.local_fmlpy_buf != null)
@@ -443,8 +449,10 @@ public final class Mapping {
   }
 
   private final void load_file(final String name, final byte[] data) {
-    if (name.endsWith("/Side.java") || name.endsWith("/SideOnly.java"))
-      this.sidePath = name.substring(0, name.lastIndexOf('/'));
+    if (name.endsWith("/Side.java"))
+      this.urlSide = name.substring(0, name.length() - 5);
+    if (name.endsWith("/SideOnly.java"))
+      this.urlSideOnly = name.substring(0, name.length() - 5);
     this.sources.put(name, data);
   }
 }

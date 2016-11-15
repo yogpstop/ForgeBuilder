@@ -1,5 +1,6 @@
 package com.yogpc.fb;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -26,7 +27,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import com.github.abrarsyed.jastyle.ASFormatter;
-import com.github.abrarsyed.jastyle.constants.EnumFormatStyle;
+import com.github.abrarsyed.jastyle.OptParser;
+import com.github.abrarsyed.jastyle.exceptions.MalformedOptionException;
 import com.google.gson.Gson;
 import com.yogpc.fb.asm.MainTransformer;
 import com.yogpc.fb.fg.FFPatcher;
@@ -42,19 +44,6 @@ import com.yogpc.fb.sa.Utils;
 
 public final class Decompiler {
   private static Map<String, Decompiler> list;
-  private static final ASFormatter fmtr = new ASFormatter();
-  static {
-    fmtr.setFormattingStyle(EnumFormatStyle.ALLMAN);// style=allman
-    // TODO add-brackets
-    fmtr.setBreakClosingHeaderBracketsMode(true);// break-closing-brackets
-    fmtr.setSwitchIndent(true);// indent-switches
-    fmtr.setMaxInStatementIndentLength(40);// max-instatement-indent=40
-    fmtr.setOperatorPaddingMode(true);// pad-oper
-    // TODO pad-header
-    fmtr.setParensUnPaddingMode(true);// unpad-paren
-    fmtr.setBreakBlocksMode(true);// break-blocks
-    fmtr.setDeleteEmptyLinesMode(true);// delete-empty-lines
-  }
 
   private static final String PAT_BASE =
       "/maven/net/minecraftforge/forge/";
@@ -187,6 +176,20 @@ public final class Decompiler {
       .compile("(?m)(?:\\r\\n|\\r|\\n)((?:\\r\\n|\\r|\\n)[ \\t]+(case|default))");
 
   private final void astyle(final Map<String, String> target) throws IOException {
+    ASFormatter fmtr = new ASFormatter();
+    OptParser opt = new OptParser(fmtr);
+    BufferedReader br = new BufferedReader(new StringReader(this.m.astyle_conf));
+    String line;
+    while ((line = br.readLine()) != null) {
+      if (line.length() == 0 || line.charAt(0) == '#')
+        continue;
+      try {
+        opt.parseOption(line.trim());
+      } catch (MalformedOptionException ex) {
+        System.out.println("ignore unknown astyle config \"" + line + "\"");
+      }
+    }
+    br.close();
     final List<String> names = new ArrayList<String>(target.keySet());
     for (final String name : names) {
       if (!name.toLowerCase().endsWith(".java"))
